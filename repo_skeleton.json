@@ -1,0 +1,424 @@
+{
+  "repo": "praneeeth/synapse_studio_v1",
+  "last_indexed_commit": "af27e4c2be8a1764caf81aad57433d35877e60e2",
+  "description": "entreprise grade RAG based chatbot",
+  "languages": {
+    "JavaScript": 66095,
+    "Python": 62803,
+    "CSS": 1848,
+    "Dockerfile": 1714,
+    "PowerShell": 1253,
+    "HTML": 797
+  },
+  "files": [
+    {
+      "path": "backend/app/__init__.py",
+      "language": "python",
+      "note": "Empty module initialization file.",
+      "functions": [],
+      "classes": [],
+      "imports": []
+    },
+    {
+      "path": "backend/app/chunkers.py",
+      "language": "python",
+      "note": "Contains functions for text chunking using various methods.",
+      "functions": [
+        {
+          "name": "clean_text",
+          "start_line": 29,
+          "end_line": 34,
+          "parameters": [
+            "text"
+          ],
+          "note": "Cleans text by removing unwanted characters.",
+          "callees": [],
+          "callers": [
+            "chunk_fixed",
+            "chunk_recursive",
+            "chunk_paragraph",
+            "chunk_semantic"
+          ]
+        },
+        {
+          "name": "_semantic_embeddings",
+          "start_line": 38,
+          "end_line": 43,
+          "parameters": [],
+          "note": "Generates semantic embeddings for text.",
+          "callees": [],
+          "callers": [
+            "chunk_semantic"
+          ]
+        },
+        {
+          "name": "_enforce_max_chars",
+          "start_line": 46,
+          "end_line": 69,
+          "parameters": [
+            "chunks",
+            "max_chars"
+          ],
+          "note": "Ensures chunks do not exceed maximum character limit.",
+          "callees": [],
+          "callers": [
+            "chunk_recursive",
+            "chunk_paragraph",
+            "chunk_semantic"
+          ]
+        },
+        {
+          "name": "chunk_fixed",
+          "start_line": 75,
+          "end_line": 89,
+          "parameters": [
+            "text",
+            "chunk_size",
+            "chunk_overlap"
+          ],
+          "note": "Chunks text into fixed-size segments.",
+          "callees": [
+            "clean_text"
+          ],
+          "callers": []
+        },
+        {
+          "name": "chunk_recursive",
+          "start_line": 92,
+          "end_line": 104,
+          "parameters": [
+            "text",
+            "chunk_size",
+            "chunk_overlap"
+          ],
+          "note": "Recursively chunks text with overlap.",
+          "callees": [
+            "clean_text",
+            "_enforce_max_chars"
+          ],
+          "callers": [
+            "chunk_semantic"
+          ]
+        },
+        {
+          "name": "chunk_paragraph",
+          "start_line": 107,
+          "end_line": 128,
+          "parameters": [
+            "text",
+            "chunk_size",
+            "chunk_overlap"
+          ],
+          "note": "Chunks text by paragraphs.",
+          "callees": [
+            "clean_text",
+            "_enforce_max_chars"
+          ],
+          "callers": []
+        },
+        {
+          "name": "chunk_semantic",
+          "start_line": 131,
+          "end_line": 152,
+          "parameters": [
+            "text",
+            "chunk_size",
+            "chunk_overlap"
+          ],
+          "note": "Chunks text based on semantic meaning.",
+          "callees": [
+            "clean_text",
+            "_enforce_max_chars",
+            "_semantic_embeddings",
+            "chunk_recursive"
+          ],
+          "callers": []
+        },
+        {
+          "name": "chunk_text",
+          "start_line": 165,
+          "end_line": 181,
+          "parameters": [
+            "text",
+            "method",
+            "chunk_size",
+            "chunk_overlap"
+          ],
+          "note": "Chunks text using the specified method.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "available_methods",
+          "start_line": 184,
+          "end_line": 185,
+          "parameters": [],
+          "note": "Lists available chunking methods.",
+          "callees": [],
+          "callers": []
+        }
+      ],
+      "classes": [],
+      "imports": [
+        "__future__",
+        "logging",
+        "re",
+        "functools",
+        "typing",
+        "langchain_text_splitters",
+        "config",
+        "langchain_huggingface",
+        "langchain_experimental.text_splitter"
+      ]
+    },
+    {
+      "path": "backend/app/config.py",
+      "language": "python",
+      "note": "Handles application configuration and settings.",
+      "functions": [
+        {
+          "name": "get_settings",
+          "start_line": 91,
+          "end_line": 95,
+          "parameters": [],
+          "note": "Retrieves application settings.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "_split_origins",
+          "start_line": 73,
+          "end_line": 77,
+          "parameters": [
+            "cls",
+            "v"
+          ],
+          "note": "Splits origins for validation.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "_absolutise",
+          "start_line": 81,
+          "end_line": 83,
+          "parameters": [
+            "cls",
+            "v"
+          ],
+          "note": "Converts relative paths to absolute.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "max_upload_bytes",
+          "start_line": 86,
+          "end_line": 87,
+          "parameters": [
+            "self"
+          ],
+          "note": "Returns the maximum upload size in bytes.",
+          "callees": [],
+          "callers": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "Settings",
+          "start_line": 29,
+          "end_line": 87,
+          "methods": [
+            "_split_origins",
+            "_absolutise",
+            "max_upload_bytes"
+          ],
+          "note": "Defines application settings with validation."
+        }
+      ],
+      "imports": [
+        "functools",
+        "pathlib",
+        "typing",
+        "truststore",
+        "pydantic",
+        "pydantic_settings"
+      ]
+    },
+    {
+      "path": "backend/app/llm.py",
+      "language": "python",
+      "note": "Manages interactions with the LLM API.",
+      "functions": [
+        {
+          "name": "get_client",
+          "start_line": 35,
+          "end_line": 42,
+          "parameters": [],
+          "note": "Returns an HTTP client for API requests.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "clean_output",
+          "start_line": 52,
+          "end_line": 54,
+          "parameters": [
+            "text"
+          ],
+          "note": "Cleans the output text.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "resolve_api_key",
+          "start_line": 57,
+          "end_line": 67,
+          "parameters": [
+            "override"
+          ],
+          "note": "Resolves the API key for authentication.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "_payload",
+          "start_line": 70,
+          "end_line": 77,
+          "parameters": [
+            "messages",
+            "stream"
+          ],
+          "note": "Prepares the payload for API requests.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "_headers",
+          "start_line": 80,
+          "end_line": 81,
+          "parameters": [
+            "api_key"
+          ],
+          "note": "Generates headers for API requests.",
+          "callees": [],
+          "callers": []
+        },
+        {
+          "name": "_raise_for_provider",
+          "start_line": 84,
+          "end_line": 90,
+          "parameters": [
+            "status",
+            "body"
+          ],
+          "note": "Raises errors for specific provider responses.",
+          "callees": [],
+          "callers": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "RetryableProviderError",
+          "start_line": 31,
+          "end_line": 32,
+          "methods": [],
+          "note": "Custom error for retryable provider issues."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "re",
+        "typing",
+        "httpx",
+        "fastapi",
+        "tenacity",
+        "config"
+      ]
+    }
+  ],
+  "history": {
+    "commits": [
+      {
+        "sha": "af27e4c2be8a1764caf81aad57433d35877e60e2",
+        "author": "praneeeth",
+        "date": "2026-08-12T12:48:51Z",
+        "message": "Rebuild Synapse Studio: complete RAG backend, wired frontend, docs, CI",
+        "files": [
+          ".github/workflows/ci.yml",
+          ".gitignore",
+          "ARCHITECTURE.md",
+          "README.md",
+          "backend/.dockerignore",
+          "backend/.env.example",
+          "backend/Dockerfile",
+          "backend/app/__init__.py",
+          "backend/app/chunkers.py",
+          "backend/app/config.py",
+          "backend/app/llm.py",
+          "backend/app/main.py",
+          "backend/app/notes.txt",
+          "backend/app/parsers.py",
+          "backend/app/rag.py",
+          "backend/app/reranker.py",
+          "backend/app/routers/__init__.py",
+          "backend/app/routers/chat.py",
+          "backend/app/routers/documents.py",
+          "backend/app/routers/health.py",
+          "backend/app/schemas.py",
+          "backend/app/storage.py",
+          "backend/app/vector_store.py",
+          "backend/pyproject.toml",
+          "backend/requirements-dev.txt",
+          "backend/requirements.txt",
+          "backend/tests/conftest.py",
+          "backend/tests/test_api.py",
+          "backend/tests/test_chunkers.py",
+          "backend/tests/test_rag.py",
+          "docker-compose.yml",
+          "frontend/.dockerignore",
+          "frontend/.env.example",
+          "frontend/.gitignore",
+          "frontend/Dockerfile",
+          "frontend/README.md",
+          "frontend/eslint.config.js",
+          "frontend/index.html",
+          "frontend/nginx.conf",
+          "frontend/package-lock.json",
+          "frontend/package.json",
+          "frontend/postcss.config.js",
+          "frontend/public/vite.svg",
+          "frontend/src/App.jsx",
+          "frontend/src/api/client.js",
+          "frontend/src/components/layout/HeaderBar.jsx",
+          "frontend/src/components/leftPanel/ChunkMethodDefinition.jsx",
+          "frontend/src/components/leftPanel/ChunkPreviewSection.jsx",
+          "frontend/src/components/leftPanel/ChunkingMethodDropdown.jsx",
+          "frontend/src/components/leftPanel/ChunkingMethodSection.jsx",
+          "frontend/src/components/leftPanel/LeftPanel.jsx",
+          "frontend/src/components/leftPanel/RagFileUploadSection.jsx",
+          "frontend/src/components/middlePanel/ChatPanel.jsx",
+          "frontend/src/components/middlePanel/MiddlePanel.jsx",
+          "frontend/src/components/middlePanel/ModelInfoPanel.jsx",
+          "frontend/src/components/rightPanel/BotIdentityForm.jsx",
+          "frontend/src/components/rightPanel/PromptEditor.jsx",
+          "frontend/src/components/rightPanel/RightPanel.jsx",
+          "frontend/src/components/shared/StatPill.jsx",
+          "frontend/src/components/shared/Toast.jsx",
+          "frontend/src/constants.js",
+          "frontend/src/hooks/useDocuments.js",
+          "frontend/src/hooks/useLocalStorage.js",
+          "frontend/src/index.css",
+          "frontend/src/main.jsx",
+          "frontend/tailwind.config.js",
+          "frontend/vite.config.js",
+          "scripts/dev-backend.ps1",
+          "scripts/dev-frontend.ps1",
+          "scripts/test-backend.ps1"
+        ]
+      }
+    ],
+    "pull_requests": [],
+    "issues": []
+  }
+}
