@@ -26,7 +26,7 @@
           "responseSchema": "CreateCoreAskResponse"
         },
         "complexity": "Complex",
-        "complexityReason": "SUBMIT mode changes workflow state, creates a WorkflowTask, writes WorkflowHistory and OutboxMessage, mutates multiple aggregates atomically (Ask, AskVersion, WorkflowInstance, WorkflowTask, WorkflowDecision, WorkflowHistory, AskComment, AskAttachmentLink), and calls external reference-data and employee services for validation.",
+        "complexityReason": "SUBMIT mode changes workflow state, creates a WorkflowTask, writes an OutboxMessage, and commits multiple aggregates (Ask, AskVersion, WorkflowInstance, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, comment, audit, attachment links) atomically in one transaction.",
         "sources": [
           "US-ASK-001",
           "ADO 1857",
@@ -99,85 +99,69 @@
         "differences": [
           {
             "item": "API path",
-            "specValue": "/core-asks (no /api/v1 prefix, type-qualified resource name)",
-            "masterLldValue": "/api/v1/asks (versioned prefix, plural unqualified resource name per MLLD 15 and REST conventions)",
+            "specValue": "POST /core-asks",
+            "masterLldValue": "POST /api/v1/asks (with /api/v1 prefix and plural resource 'asks')",
             "owner": "Solution Architecture"
           },
           {
-            "item": "HTTP status code for business rule violations (fteAmount > headCountAmount, date constraints)",
-            "specValue": "422 Unprocessable Entity (AC5, AC7, Error Behaviour section)",
-            "masterLldValue": "400 validation_failed — 422 is not present in the approved error catalogue (MLLD 12.2)",
+            "item": "HTTP status code for business rule violations",
+            "specValue": "422 for fteAmount > headCountAmount, date ordering, and date-in-past violations (AC5, AC7, Error Behaviour section)",
+            "masterLldValue": "400 validation_failed for all invalid request conditions (MLLD 12.2); 422 is not in the approved error table",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Success HTTP status code",
-            "specValue": "200 or 201 (ambiguous — spec states both)",
-            "masterLldValue": "Not explicitly resolved in Master LLD; 201 is conventional for POST resource creation under REST contract (API 001)",
-            "owner": "API Contract owner"
-          },
-          {
-            "item": "buttonValue=Exit no-op on a POST endpoint",
-            "specValue": "POST /core-asks with buttonValue=Exit returns success without persisting any data (FR6, AC4)",
-            "masterLldValue": "Master LLD catalogue separates create (POST /api/v1/asks) from submit (POST /api/v1/asks/{id}/submit); a no-op POST is not a pattern in the approved catalogue",
+            "item": "Leadership submitter routing shortcut",
+            "specValue": "SUBMIT by a leadership-group member routes directly to status 145 DPP Ops Review, bypassing PPL Review (FR5, BR25, AC3)",
+            "masterLldValue": "Master LLD 7.4 notes the shortcut exists but defers to 'verified source rules'; the exact permission or group definition is not confirmed in the Master LLD",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Combined create-and-submit in a single endpoint",
-            "specValue": "Single POST /core-asks handles Save & Exit (draft), SUBMIT (workflow start), and Exit (no-op) via buttonValue (FR4, FR5, FR6, BR23)",
-            "masterLldValue": "Master LLD proposes separate POST /api/v1/asks (create draft) and POST /api/v1/asks/{id}/submit (start workflow) operations (MLLD 15)",
-            "owner": "Solution Architecture"
-          },
-          {
-            "item": "Workflow routing states referenced by numeric ID",
-            "specValue": "Status 123 (In Progress / draft), 127 (PPL Review), 145 (DPP Ops Review) used as routing targets (FR4, FR5, BR24, BR25, BR26)",
-            "masterLldValue": "Master LLD and state-transition document use named states: Draft, Pending PPL Approval, Pending Additional Approval, Pending Leadership Approval, Completed, Cancelled — numeric IDs are not mapped",
+            "item": "Workflow status values expressed as numeric IDs",
+            "specValue": "123 (In Progress / Save & Exit), 127 (PPL Review), 145 (DPP Ops Review)",
+            "masterLldValue": "Master LLD uses named states only (Draft/In Progress, PPL Review, DPP Ops Review); numeric-to-name mapping is not present in the Master LLD or state-transition document",
             "owner": "Business Analysis"
           }
         ],
         "missingFacts": [
           {
-            "item": "Exact RBAC permission code for 'Create New ASK' — spec names the permission in plain English but provides no permission code from the US RBAC 001 matrix",
+            "item": "Exact permission code that grants 'Create New ASK' access and the RBAC matrix row for this operation",
             "owner": "Security"
           },
           {
-            "item": "Mapping of numeric status IDs 123, 127, and 145 to approved workflow state names",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Definition of the 'top-3 set' for levelNeedId that triggers rolePostingId requirement (BR17)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Definition of the 'first option' for needReasonId (BR6)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Definition of the 'first option' for generalSpecialityNeedId (BR7)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Definition of the 'retirement' value for needReasonId (BR11)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "How leadership group membership is determined from the authenticated caller's context (BR24, BR25, AC2, AC3)",
+            "item": "Definition of 'leadership group' membership: which role(s), group(s) or permission flag the API must check to determine the SUBMIT routing path",
             "owner": "Security"
           },
           {
-            "item": "Clarification of 'new-version only' qualifier on pml (BR9), titlingCategory (BR18), and transitionalCoach (BR19)",
+            "item": "Reference data IDs for the 'first option' of needReasonId (BR6) and generalSpecialityNeedId (BR7) that trigger field-clearing behaviour",
             "owner": "Business Analysis"
           },
           {
-            "item": "Confirmed transaction scope — whether all aggregates are committed atomically in a single SaveChangesAsync (spec Assumption 1)",
-            "owner": "Solution Architecture"
+            "item": "Reference data ID or value for 'retirement' needReasonId that makes endDate optional (BR11)",
+            "owner": "Business Analysis"
           },
           {
-            "item": "OpenAPI operation definition and approved request/response schemas (CreateCoreAskRequest, CreateCoreAskResponse)",
+            "item": "Enumerated set of levelNeedId values constituting the 'top-3 set' that makes rolePostingId required (BR17)",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Confirmed success HTTP status code: 200 or 201 for a successful create operation",
             "owner": "API Contract owner"
           },
           {
-            "item": "Data retention policy for Core ASK records",
+            "item": "Confirmed transaction scope: whether Ask, AskVersion, WorkflowInstance, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, comment, audit, and attachment links must all commit atomically or whether any are deferred",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Clarification of 'new-version only' qualifier on pml (BR9), titlingCategory (BR18), and transitionalCoach (BR19): whether these fields are in scope for the initial create operation or reserved for amend",
             "owner": "Business Analysis"
+          },
+          {
+            "item": "Resolution of duplicate 'numberofresources' field in the request schema (noted in spec Assumptions item 12): confirmed single field definition and its validation rules",
+            "owner": "API Contract owner"
+          },
+          {
+            "item": "Approved OpenAPI operation and schema components (CreateCoreAskRequest, CreateCoreAskResponse) for this endpoint",
+            "owner": "API Contract owner"
           }
         ],
         "cardStatus": "Ready for Review",
@@ -187,11 +171,11 @@
       }
     ],
     "assumptions": [
-      "buttonValue=Exit is treated as a server-side no-op returning success without any persistence — confirmed in spec Assumptions section but unusual for a POST; Solution Architecture to confirm this pattern is acceptable or whether the client should simply not call the endpoint.",
-      "Attachment file-upload contract is represented as a documents array in the JSON body — confirmed in spec Assumptions section; multipart vs. JSON base64 encoding is not resolved and is an open item for the API Contract owner.",
-      "Leadership group membership is determinable from the server-side DRT actor context at request time — unconfirmed in spec; recorded as a missing fact for Security.",
-      "The 'new-version only' fields (pml, titlingCategory, transitionalCoach) are applicable to initial creation in this story — unconfirmed; recorded as a missing fact for Business Analysis.",
-      "Numeric status IDs 123, 127, 145 correspond to Draft/In Progress, Pending PPL Approval, and a DPP Ops routing state respectively — unconfirmed mapping; recorded as a missing fact for Business Analysis."
+      "buttonValue=Exit is a no-op: the API returns a success response without persisting any data (confirmed in spec Assumptions item 2).",
+      "Attachment file-upload contract is represented as a file-upload array in the request body (confirmed in spec Assumptions item 3).",
+      "All write operations (ASK record, task, comment, audit, attachments) are assumed to commit atomically; this is unconfirmed and recorded as a missing fact for Solution Architecture.",
+      "Leadership group membership is derived server-side from the authenticated caller's current DRT roles and is never accepted from the request body (SEC 003).",
+      "The path /core-asks in the specification differs from the Master LLD catalogue path /api/v1/asks; the specification path is recorded as a difference pending Solution Architecture confirmation."
     ]
   },
   "drafts": {
