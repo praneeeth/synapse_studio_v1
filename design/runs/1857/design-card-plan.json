@@ -26,7 +26,7 @@
           "responseSchema": "CreateCoreAskResponse"
         },
         "complexity": "Complex",
-        "complexityReason": "SUBMIT mode changes workflow state, creates a WorkflowTask, writes an OutboxMessage, and commits multiple aggregates (Ask, AskVersion, WorkflowInstance, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, comment, audit, attachment links) atomically in one transaction.",
+        "complexityReason": "SUBMIT action changes workflow state, creates a human task, branches routing on leadership group membership, and writes multiple aggregates (Ask, AskVersion, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, Comment, Audit) atomically.",
         "sources": [
           "US-ASK-001",
           "ADO 1857",
@@ -100,68 +100,74 @@
           {
             "item": "API path",
             "specValue": "POST /core-asks",
-            "masterLldValue": "POST /api/v1/asks (with /api/v1 prefix and plural resource 'asks')",
+            "masterLldValue": "POST /api/v1/asks (proposed catalogue, MLLD §15)",
             "owner": "Solution Architecture"
           },
           {
-            "item": "HTTP status code for business rule violations",
-            "specValue": "422 for fteAmount > headCountAmount, date ordering, and date-in-past violations (AC5, AC7, Error Behaviour section)",
-            "masterLldValue": "400 validation_failed for all invalid request conditions (MLLD 12.2); 422 is not in the approved error table",
+            "item": "Workflow status references",
+            "specValue": "Numeric status IDs 123 (In Progress), 127 (PPL Review), 145 (DPP Ops Review)",
+            "masterLldValue": "Named states only: Draft, Pending PPL Approval, etc. (MLLD §7.4); no numeric ID mapping present",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "HTTP error status code for business rule violations",
+            "specValue": "422 for date constraint and FTE violations (AC5, AC7, Error Behaviour section)",
+            "masterLldValue": "Master LLD error catalogue (MLLD §12.2) defines 400 validation_failed for invalid requests; 422 is not listed",
             "owner": "Solution Architecture"
           },
           {
             "item": "Leadership submitter routing shortcut",
-            "specValue": "SUBMIT by a leadership-group member routes directly to status 145 DPP Ops Review, bypassing PPL Review (FR5, BR25, AC3)",
-            "masterLldValue": "Master LLD 7.4 notes the shortcut exists but defers to 'verified source rules'; the exact permission or group definition is not confirmed in the Master LLD",
+            "specValue": "Leadership group submitter routes directly to status 145 DPP Ops Review, bypassing PPL Review (BR25, AC3)",
+            "masterLldValue": "MLLD §7.4 references 'Leadership submitter shortcut' but detail is unconfirmed (open item LLD T03)",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Workflow status values expressed as numeric IDs",
-            "specValue": "123 (In Progress / Save & Exit), 127 (PPL Review), 145 (DPP Ops Review)",
-            "masterLldValue": "Master LLD uses named states only (Draft/In Progress, PPL Review, DPP Ops Review); numeric-to-name mapping is not present in the Master LLD or state-transition document",
-            "owner": "Business Analysis"
+            "item": "buttonValue=Exit accepted by the API as a no-op",
+            "specValue": "API accepts Exit buttonValue and returns success without persisting data (FR6, AC4)",
+            "masterLldValue": "No equivalent pattern in Master LLD; exit/cancel-before-save is a UI concern with no API counterpart in the catalogue",
+            "owner": "Solution Architecture"
           }
         ],
         "missingFacts": [
           {
-            "item": "Exact permission code that grants 'Create New ASK' access and the RBAC matrix row for this operation",
+            "item": "Status ID to name mapping: 123, 127, 145 — exact named-state equivalents not confirmed in any approved source",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "'Top-3 set' for levelNeedId referenced in BR17 — specific reference data IDs not defined",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "'First option' ID for needReasonId (BR6) and generalSpecialityNeedId (BR7) — specific reference data IDs not defined",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "'Retirement' value for needReasonId referenced in BR11 — specific reference data ID not defined",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Leadership group membership rule and attribute source used for routing decision (BR24, BR25, AC2, AC3) — not present in RBAC matrix reference",
             "owner": "Security"
           },
           {
-            "item": "Definition of 'leadership group' membership: which role(s), group(s) or permission flag the API must check to determine the SUBMIT routing path",
+            "item": "Exact permission code for 'Create New ASK' — permission name not specified in spec or RBAC matrix reference",
             "owner": "Security"
           },
           {
-            "item": "Reference data IDs for the 'first option' of needReasonId (BR6) and generalSpecialityNeedId (BR7) that trigger field-clearing behaviour",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Reference data ID or value for 'retirement' needReasonId that makes endDate optional (BR11)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Enumerated set of levelNeedId values constituting the 'top-3 set' that makes rolePostingId required (BR17)",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "Confirmed success HTTP status code: 200 or 201 for a successful create operation",
+            "item": "Success HTTP status code — spec states 200 or 201 but does not confirm which applies for a create operation",
             "owner": "API Contract owner"
           },
           {
-            "item": "Confirmed transaction scope: whether Ask, AskVersion, WorkflowInstance, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, comment, audit, and attachment links must all commit atomically or whether any are deferred",
+            "item": "Idempotency key requirement and scope for the create command — not specified in spec",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Clarification of 'new-version only' qualifier on pml (BR9), titlingCategory (BR18), and transitionalCoach (BR19): whether these fields are in scope for the initial create operation or reserved for amend",
+            "item": "Transaction scope across Ask, Task, Comment, Audit, and Attachment entities — explicitly unconfirmed in spec (Assumption 1)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "'New-version only' field semantics for pml, titlingCategory, transitionalCoach (BR9, BR18, BR19) — not clarified whether this create operation is the new version context",
             "owner": "Business Analysis"
-          },
-          {
-            "item": "Resolution of duplicate 'numberofresources' field in the request schema (noted in spec Assumptions item 12): confirmed single field definition and its validation rules",
-            "owner": "API Contract owner"
-          },
-          {
-            "item": "Approved OpenAPI operation and schema components (CreateCoreAskRequest, CreateCoreAskResponse) for this endpoint",
-            "owner": "API Contract owner"
           }
         ],
         "cardStatus": "Ready for Review",
@@ -171,11 +177,11 @@
       }
     ],
     "assumptions": [
-      "buttonValue=Exit is a no-op: the API returns a success response without persisting any data (confirmed in spec Assumptions item 2).",
-      "Attachment file-upload contract is represented as a file-upload array in the request body (confirmed in spec Assumptions item 3).",
-      "All write operations (ASK record, task, comment, audit, attachments) are assumed to commit atomically; this is unconfirmed and recorded as a missing fact for Solution Architecture.",
-      "Leadership group membership is derived server-side from the authenticated caller's current DRT roles and is never accepted from the request body (SEC 003).",
-      "The path /core-asks in the specification differs from the Master LLD catalogue path /api/v1/asks; the specification path is recorded as a difference pending Solution Architecture confirmation."
+      "buttonValue=Exit is treated as a server-side no-op returning success without persistence (confirmed in spec Assumption 2).",
+      "Attachment file-upload contract is represented as a file upload array in the request body (confirmed in spec Assumption 3).",
+      "All entities (Ask, Task, Comment, Audit, Attachments) are created atomically or not at all — transaction behaviour is unconfirmed and recorded as a missing fact.",
+      "Leadership group membership is resolved from the authenticated caller's server-side profile, never from the request body (SEC 003).",
+      "The 'new-version only' field qualifier in BR9, BR18, BR19 applies to this initial create operation as version 1."
     ]
   },
   "drafts": {
