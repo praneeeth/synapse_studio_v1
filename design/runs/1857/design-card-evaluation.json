@@ -8,9 +8,9 @@
   },
   "repository": "praneeeth/synapse_studio_v1",
   "branch": "main",
-  "runId": "eb5a8bf3ec159686a224e6d593f8e42cf6a7b819",
-  "runAt": "2025-01-10T08:15:00Z",
-  "result": "APPROVED",
+  "runId": "735c8e8cb25c47d709350ac5b9a529696fa773db",
+  "runAt": "2025-07-14T00:00:00Z",
+  "result": "BLOCKED",
   "iterations": 1,
   "score": 100,
   "threshold": 100,
@@ -20,11 +20,11 @@
       "cardId": "ASK-POST-CORE-ASKS",
       "operation": "POST /core-asks",
       "complexity": "Complex",
-      "cardStatus": "Ready for Review",
+      "cardStatus": "Blocked",
       "result": "PASS",
       "counts": {
-        "words": 1546,
-        "tables": 7,
+        "words": 1805,
+        "tables": 8,
         "diagrams": 0,
         "processing_steps": 10,
         "test_scenarios": 12
@@ -38,16 +38,20 @@
         "6": "Pass",
         "7": "Pass",
         "8": "Pass",
-        "9": "N/A",
-        "10": "N/A",
+        "9": "Pass",
+        "10": "Pass",
         "11": "Pass",
         "12": "Pass",
         "13": "Pass",
         "14": "Pass"
       },
       "publishedPath": "design/api-cards/ASK-POST-CORE-ASKS.md",
-      "blockers": [],
-      "openItems": 10
+      "blockers": [
+        "Specification uses HTTP 422 for business validation failures but MLLD 12.2 defines only 400 validation_failed. Conflict must be resolved before error contract can be finalised. Owner: Solution Architecture",
+        "Specification defines POST /core-asks but MLLD 15 proposed catalogue defines POST /api/v1/asks. Path and type-discriminator approach must be confirmed. Owner: Solution Architecture",
+        "Request and response schemas contain a duplicate field numberofresources. This specification defect must be resolved. Owner: API Contract owner"
+      ],
+      "openItems": 20
     }
   ],
   "history": [
