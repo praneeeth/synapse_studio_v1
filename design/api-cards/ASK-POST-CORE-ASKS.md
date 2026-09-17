@@ -5,115 +5,115 @@
 | API ID | ASK-POST-CORE-ASKS |
 | Operation | POST /core-asks - operationId createCoreAsk (proposed) |
 | Module | ASK |
-| Purpose | Create a new Core ASK record in draft or submitted state, routing to the appropriate workflow status based on buttonValue and the caller's leadership group membership. |
-| Complexity | Complex - SUBMIT action changes workflow state, creates a human task, branches routing on leadership group membership, and writes multiple aggregates (Ask, AskVersion, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, Comment, Audit) atomically. |
-| Sources | US-ASK-001; ADO 1857; FR1; FR2; FR3; FR4; FR5; FR6; FR7; FR8; FR9; FR10; FR11; FR12; BR1–BR26; AC1–AC7 |
-| Standards | ARCH 001; ARCH 002; ARCH 003; ARCH 004; DATA 001; DATA 003; DATA 004; API 001; API 002; SEC 001; SEC 002; SEC 003; WF 001; WF 003; REL 001; REL 002; OBS 001; TEST 001 |
-| Status | Ready for Review |
+| Purpose | Create a new Core ASK record with validated business data, supporting draft save, workflow submission, and no-op exit behaviours. Routes the submitted ASK to PPL Review or DPP Ops Review based on submitter leadership-group membership. |
+| Complexity | Complex - creates multiple aggregates atomically (Ask, AskVersion, AskResource, WorkflowTask, AskComment, AskAttachmentLink), changes workflow state conditionally on buttonValue and submitter role, and writes an outbox event on SUBMIT. |
+| Sources | US-ASK-001; ADO 1857; FR1–FR8; BR1–BR18; AC1–AC7 |
+| Standards | ARCH 001; ARCH 002; ARCH 003; ARCH 004; DATA 001; DATA 003; DATA 004; API 001; API 002; SEC 001; SEC 002; SEC 003; WF 001; WF 003; REL 001; REL 002; NTF 001; NTF 002; OBS 001; TEST 001 |
+| Status | Blocked |
 
 ## Contract summary
 
-| Row | Detail |
+| Field | Value |
 |---|---|
 | Path and query | POST /core-asks — no path or query parameters |
-| Request schema | CreateCoreAskRequest: `coreAskDetails` object (FR10), `comment` string (FR8), `documents` file-upload array (FR9, Assumption 3), `buttonValue` enum ["Save & Exit", "SUBMIT", "Exit"] (BR23) |
-| Response schema | CreateCoreAskResponse: `askId`, `askDetailId`, `taskId`, `statusId`, `assigneeId`, `commentId` (nullable), `auditId`, `version` (integer, 1 for new), `coreAskDetails` echo (FR7, FR12) |
-| Success status | TBD (OI-7) — spec states 200 or 201 but does not confirm which applies for a create operation |
-| Idempotency | TBD (OI-8) — idempotency key requirement and scope not specified in spec |
-| Concurrency | Not specified in spec |
+| Request schema | CreateCoreAskRequest — body contains: coreAskDetails (coreAskName, dppGroupId, needReasonId, generalSpecialityNeedId, generalSpecialityNeedComment, levelNeedId, pml, projectedStartDate, endDate, outgoingResource, employeeId, headCountAmount, fteAmount, rolePostingId, titlingCategory, transitionalCoach, roleSummary, roleResponsibility, roleQualification); comment (string); documents (file upload array — exact MIME types, size limits and encoding TBD OI-6); buttonValue (Save & Exit \| SUBMIT \| Exit). Note: duplicate field numberofresources appears twice in the specification schema — treated as a specification defect (OI-5). |
+| Response schema | CreateCoreAskResponse — returns askId, askDetailId, coreAskDetails (echo of accepted fields), version, task (taskId, statusId, assigneeId), comment (commentId), auditHistory (auditId). Returned on Save & Exit and SUBMIT only; Exit returns no body (TBD OI-4). |
+| Success status | 201 Created for Save & Exit and SUBMIT; TBD OI-4 for Exit (no persistence — 204 or client-side no-op) |
+| Idempotency | TBD OI-7 — whether a client-supplied idempotency key is required to prevent duplicate ASK creation on retry is unresolved (REL 001). |
+| Concurrency | Not applicable on creation; rowversion returned in response for subsequent updates (DATA 004). |
 
 ## Authorization
 
-| Row | Detail |
+| Control | Value |
 |---|---|
-| Authentication | Caller must be authenticated per SEC 001; mechanism TBD (OI-4) |
-| Permission | Caller must hold "Create New ASK" permission (spec Business Constraints); exact permission code TBD (OI-6) |
-| Role condition | Leadership group membership is resolved server-side from the authenticated caller's profile and must not be supplied in the request body (SEC 003, BR25, AC3) |
-| Record scope | No existing record scope — this is a create operation |
-| Workflow scope | Not applicable at entry; workflow state is set by this operation |
-| Audit | Creation event recorded as auditId in response (FR7); governed by DATA 004 and OBS 001 |
+| Authentication | SEC 001 — validated Entra JWT required on every call. |
+| Permission | TBD OI-1 — exact application permission code (e.g. ASK.CREATE) not defined in specification; owner: Security. |
+| Role condition | Leadership-group membership determines SUBMIT routing (AC2 vs AC3); exact role(s) or group(s) that qualify as leadership submitters TBD OI-2. |
+| Record scope | Caller must belong to an authorized BusinessUnit for Core ASK creation; exact BU scope rule TBD OI-10 (SEC 002). |
+| Workflow scope | No prior task required — this is a creation operation; workflow instance is created by this call. |
+| Audit | Actor, action (Create), resulting statusId, correlation ID, and CreatedAt recorded on Ask and WorkflowHistory (OBS 001). |
 
 ## Processing flow
 
-1. Authenticate caller and verify "Create New ASK" permission; return 403 if absent (SEC 001, SEC 002, spec Error Behaviour).
-2. If `buttonValue` is "Exit", return success immediately without persisting any data (FR6, BR23, AC4).
-3. Validate all required fields and character-length constraints (BR1–BR5, BR8, BR10, BR15, BR16, BR18, BR20–BR22, AC6); return 400 listing missing or invalid fields.
-4. Validate reference data IDs (`dppGroupId`, `needReasonId`, `generalSpecialityNeedId`, `levelNeedId`, `rolePostingId` when required) are active via reference data services (FR3, BR2, BR17, spec Dependencies); return 400 if any ID is inactive or unknown.
-5. Validate `employeeId` via employee service and derive `outgoingResource` as read-only (FR11, BR14); return 400 if `employeeId` is invalid.
-6. Apply conditional field clearing rules: if `needReasonId` is the first-option value, clear `outgoingResource`, `employeeId`, `projectedStartDate`, and `endDate` (BR6, OI-3); if `generalSpecialityNeedId` is the first-option value, clear `generalSpecialityNeedComment` (BR7, OI-3).
-7. Validate date and FTE business constraints (BR11–BR13, BR16, AC5, AC7); return 422 for date ordering or FTE violations.
-8. Determine target `statusId`: if `buttonValue` is "Save & Exit" set status 123 In Progress (BR26, AC1); if "SUBMIT" and caller is not in leadership group set status 127 PPL Review (BR24, AC2); if "SUBMIT" and caller is in leadership group set status 145 DPP Ops Review (BR25, AC3). Leadership group membership sourced from caller's server-side profile (OI-5).
-9. Atomically persist Ask, AskVersion, WorkflowTask, WorkflowDecision, WorkflowHistory, OutboxMessage, Comment (if provided), Audit, and Attachments (if provided) — transaction scope TBD (OI-9); governed by ARCH 003, DATA 001, REL 001.
-10. Return CreateCoreAskResponse with all created identifiers, `statusId`, `version` = 1, and echoed `coreAskDetails` (FR7, FR12).
+1. Validate Entra JWT and resolve current DRT actor (SEC 001; OBS 001).
+2. If buttonValue is Exit, return immediately with no persistence — no further steps executed (AC4; BR — buttonValue controls behaviour).
+3. Validate all request fields: required presence, max lengths, active reference IDs for dppGroupId, needReasonId, generalSpecialityNeedId, levelNeedId; return 400 validation_failed on failure (FR3; BR1–BR9; AC6).
+4. Apply conditional clearing rules: if needReasonId is the first option, clear outgoingResource, employeeId, projectedStartDate, endDate; if generalSpecialityNeedId is the first option, clear generalSpecialityNeedComment (BR4; BR5).
+5. Apply cross-field business validation: endDate must be after projectedStartDate and not earlier than today unless needReasonId is retirement; fteAmount must not exceed headCountAmount; rolePostingId required when levelNeedId is in the top-3 set; return 400 validation_failed on failure (BR10–BR15; AC5; AC7 — OI-3 on 422 vs 400 conflict).
+6. Authorize caller: confirm active DRT user, required permission, and BU scope (SEC 002; SEC 003; OI-1; OI-10).
+7. Determine target workflow status: buttonValue Save & Exit → statusId 123 In Progress; buttonValue SUBMIT and non-leadership submitter → statusId 127 PPL Review; buttonValue SUBMIT and leadership-group submitter → statusId 145 DPP Ops Review (AC1; AC2; AC3; WF 001; OI-2).
+8. Within one database transaction: insert Ask, AskVersion, AskResource; insert AskComment if comment is present; insert AskAttachmentLink records for each document; insert WorkflowTask for the target status; insert WorkflowHistory; insert OutboxMessage when buttonValue is SUBMIT (DATA 003; WF 003; REL 002; OI-8).
+9. Commit transaction with one SaveChangesAsync; on concurrency conflict return 409 concurrency_conflict (DATA 003; DATA 004).
+10. Return 201 Created with CreateCoreAskResponse containing new identifiers, version, task, comment, and auditHistory (FR4; API 001; API 002).
 
 ## Business and workflow rules
 
 | Rule ID | Condition | Result |
 |---|---|---|
-| BR1 | `coreAskName` is absent or exceeds 200 characters | 400 validation error |
-| BR2 | `dppGroupId` is absent or not an active option | 400 validation error |
-| BR3 | `needReasonId` is absent | 400 validation error |
-| BR4 | `generalSpecialityNeedId` is absent | 400 validation error |
-| BR5 | `levelNeedId` is absent | 400 validation error |
-| BR6 | `needReasonId` equals first-option value (OI-3) | Clear `outgoingResource`, `employeeId`, `projectedStartDate`, `endDate` |
-| BR7 | `generalSpecialityNeedId` equals first-option value (OI-3) | Clear `generalSpecialityNeedComment` |
-| BR8 | `generalSpecialityNeedId` is not the first option and `generalSpecialityNeedComment` is absent | 400 validation error |
-| BR9 | `pml` is provided and exceeds 99 characters | 400 validation error; new-version-only semantics TBD (OI-10) |
-| BR10 | `projectedStartDate` is absent | 400 validation error |
-| BR11 | `endDate` is absent and `needReasonId` is not the retirement value (OI-4) | 400 validation error |
-| BR12 | `endDate` is not after `projectedStartDate` | 422 business rule violation |
-| BR13 | `endDate` is earlier than today | 422 business rule violation |
-| BR14 | `outgoingResource` is supplied in request body | Ignored; value derived from `employeeId` via employee service |
-| BR15 | `headCountAmount` is absent | 400 validation error |
-| BR16 | `fteAmount` is absent or exceeds `headCountAmount` | 400 if absent; 422 if exceeds (AC5) |
-| BR17 | `levelNeedId` is in the top-3 set (OI-2) and `rolePostingId` is absent | 400 validation error |
-| BR18 | `titlingCategory` is absent; new-version-only semantics TBD (OI-10) | 400 validation error |
-| BR19 | `transitionalCoach` is provided and exceeds 99 characters; new-version-only semantics TBD (OI-10) | 400 validation error |
-| BR20 | `roleSummary` is absent | 400 validation error |
-| BR21 | `roleResponsibility` is absent | 400 validation error |
-| BR22 | `roleQualification` is absent | 400 validation error |
-| BR23 | `buttonValue` is "Exit" | No data persisted; success response returned |
-| BR24 | `buttonValue` is "SUBMIT" and caller is not in leadership group | Route to status 127 PPL Review |
-| BR25 | `buttonValue` is "SUBMIT" and caller is in leadership group | Route to status 145 DPP Ops Review |
-| BR26 | `buttonValue` is "Save & Exit" | Route to status 123 In Progress |
+| BR1 | coreAskName is absent or exceeds 200 characters | 400 validation_failed |
+| BR2 | dppGroupId is absent or not an active reference option | 400 validation_failed |
+| BR3 | needReasonId, generalSpecialityNeedId, or levelNeedId is absent | 400 validation_failed |
+| BR4 | needReasonId equals the first option (exact ID TBD OI-5b) | Clear outgoingResource, employeeId, projectedStartDate, endDate from persisted data |
+| BR5 | generalSpecialityNeedId equals the first option (exact ID TBD OI-5b) | Clear generalSpecialityNeedComment from persisted data |
+| BR6 | generalSpecialityNeedComment is absent and generalSpecialityNeedId is not the first option | 400 validation_failed |
+| BR7 | projectedStartDate is absent | 400 validation_failed |
+| BR8 | endDate is absent and needReasonId is not retirement | 400 validation_failed |
+| BR9 | headCountAmount is absent or fteAmount is absent | 400 validation_failed |
+| BR10 | endDate is earlier than today (and needReasonId is not retirement) | 400 validation_failed (OI-3: spec states 422; conflict with MLLD 12.2) |
+| BR11 | endDate is not after projectedStartDate (and needReasonId is not retirement) | 400 validation_failed (OI-3: spec states 422; conflict with MLLD 12.2) |
+| BR12 | fteAmount exceeds headCountAmount | 400 validation_failed (OI-3: spec states 422; conflict with MLLD 12.2) |
+| BR13 | levelNeedId is in the top-3 set (exact IDs TBD OI-4b) and rolePostingId is absent | 400 validation_failed |
+| BR14 | needReasonId is retirement | endDate validation (BR8, BR10, BR11) is exempt; exact scope of exemption TBD OI-11 |
+| BR15 | buttonValue is Exit | No data persisted; return immediately |
+| BR16 | buttonValue is Save & Exit | Persist with statusId 123 In Progress; no WorkflowTask or OutboxMessage |
+| BR17 | buttonValue is SUBMIT and submitter is not in leadership group | Route to statusId 127 PPL Review; create WorkflowTask and OutboxMessage |
+| BR18 | buttonValue is SUBMIT and submitter is in leadership group | Route to statusId 145 DPP Ops Review; create WorkflowTask and OutboxMessage |
 
 ## Data impact
 
 | Operation | Entity or table | Purpose |
 |---|---|---|
-| INSERT | Ask | New Core ASK master record (FR1, FR4, FR5) |
-| INSERT | AskVersion | Version 1 detail record with all coreAskDetails fields (FR10, FR12) |
-| INSERT | WorkflowTask | Human task created and assigned per routing outcome (FR7) |
-| INSERT | WorkflowDecision | Records the buttonValue routing decision (WF 001) |
-| INSERT | WorkflowHistory | Initial state transition entry (WF 003) |
-| INSERT | OutboxMessage | Outbox event for downstream consumers (ARCH 004, REL 002) |
-| INSERT | Comment | Persisted when `comment` is provided in request (FR8) |
-| INSERT | Audit | Creation audit record; auditId returned in response (FR7, DATA 004) |
-| INSERT | Attachment | One record per entry in `documents` array when provided (FR9) |
-| READ | Reference data | Validate dppGroupId, needReasonId, generalSpecialityNeedId, levelNeedId, rolePostingId (FR3) |
-| READ | Employee | Validate employeeId and derive outgoingResource (FR11, BR14) |
+| Insert | Ask | Root aggregate record for the new Core ASK |
+| Insert | AskVersion | First version of the ASK detail data |
+| Insert | AskResource | Resource demand data linked to the version |
+| Insert | AskComment | Caller-supplied comment, when present |
+| Insert | AskAttachmentLink | One row per uploaded document, when present |
+| Insert | WorkflowTask | Current human task for the target status (SUBMIT only) |
+| Insert | WorkflowHistory | Append-only transition record from creation to target status |
+| Insert | OutboxMessage | Post-commit notification event (SUBMIT only; REL 002) |
+| Read | Reference data (app schema) | Validate dppGroupId, needReasonId, generalSpecialityNeedId, levelNeedId, rolePostingId against active options |
+| Read | User / UserBusinessUnit (security schema) | Resolve actor, confirm active status and BU scope (SEC 002) |
+
+## Events and integrations
+
+| Item | Specification |
+|---|---|
+| Outbox event | Emitted on SUBMIT only; event type, version and minimal payload TBD OI-9; aggregate type Ask, aggregateId = new askId; written in the same transaction as the business change (REL 002; WF 003). |
+| Email | Triggered by outbox worker after commit; recipient rule and template key TBD OI-9 (NTF 001; SEC 003). |
+| SignalR | WorkQueueChanged emitted by outbox worker after commit to refresh assignee work queue (NTF 002). |
 
 ## Errors and tests
 
 | Area | Content |
 |---|---|
-| Errors | 400 validation_failed - missing required field (AC6, BR1–BR5, BR8, BR10, BR15, BR16, BR20–BR22); 400 validation_failed - inactive or unknown reference data ID (BR2, BR17); 400 validation_failed - invalid employeeId (BR14); 422 business_rule_violation - fteAmount exceeds headCountAmount (AC5, BR16); 422 business_rule_violation - endDate not after projectedStartDate (AC7, BR12); 422 business_rule_violation - endDate earlier than today (BR13); 403 forbidden - caller lacks create permission (SEC 002, spec Error Behaviour); 503 service_unavailable - upstream dependency unavailable (spec Error Behaviour) |
-| Tests | AC1: Save & Exit stores draft at status 123 and returns all identifiers; AC2: SUBMIT as non-leadership routes to status 127 PPL Review; AC3: SUBMIT as leadership routes to status 145 DPP Ops Review; AC4: Exit returns success with no persisted data; AC5: fteAmount exceeds headCountAmount returns 422; AC6: missing required field returns 400; AC7: endDate not after projectedStartDate returns 422; endDate earlier than today returns 422; inactive dppGroupId returns 400; invalid employeeId returns 400; caller without create permission returns 403; upstream service unavailable returns 503 |
+| Errors | validation_failed 400 — required field absent; validation_failed 400 — dppGroupId not active; validation_failed 400 — endDate not after projectedStartDate (OI-3); validation_failed 400 — fteAmount exceeds headCountAmount (OI-3); validation_failed 400 — rolePostingId absent when levelNeedId in top-3 set; authentication_required 401 — missing or invalid JWT; access_denied 403 — permission or BU scope denied; concurrency_conflict 409 — duplicate commit; unexpected_error 500 — unhandled failure |
+| Tests | Save draft with valid data and buttonValue Save & Exit returns 201 with statusId 123; Submit as non-leadership user returns 201 with statusId 127 PPL Review; Submit as leadership user returns 201 with statusId 145 DPP Ops Review; Exit buttonValue returns no persisted data; fteAmount exceeds headCountAmount returns 400; required field absent returns 400; endDate before today returns 400; endDate not after projectedStartDate returns 400; rolePostingId absent when levelNeedId in top-3 set returns 400; invalid dppGroupId returns 400; unauthenticated caller returns 401; caller without required permission returns 403 |
 
 ## Assumptions and open items
 
 | ID | Item | Owner | Decision required |
 |---|---|---|---|
-| OI-1 | API path `/core-asks` vs proposed `/api/v1/asks` in Master LLD catalogue (MLLD §15) | Solution Architecture | Confirm canonical path before contract freeze |
-| OI-2 | "Top-3 set" for `levelNeedId` referenced in BR17 — specific reference data IDs not defined | Business Analysis | Provide the exact levelNeedId values that constitute the top-3 set |
-| OI-3 | "First option" ID for `needReasonId` (BR6) and `generalSpecialityNeedId` (BR7) — specific reference data IDs not defined | Business Analysis | Provide the exact option IDs for the first-option clearing rule |
-| OI-4 | "Retirement" value for `needReasonId` referenced in BR11 — specific reference data ID not defined | Business Analysis | Provide the exact needReasonId value for retirement |
-| OI-5 | Leadership group membership rule and attribute source for routing (BR24, BR25, AC2, AC3) — not present in RBAC matrix reference | Security | Define the attribute name and source used to determine leadership group membership |
-| OI-6 | Exact permission code for "Create New ASK" — permission name not specified in spec or RBAC matrix | Security | Confirm the permission code string |
-| OI-7 | Success HTTP status code — spec states 200 or 201 but does not confirm which applies for a create operation | API Contract owner | Confirm 200 or 201 |
-| OI-8 | Idempotency key requirement and scope for the create command — not specified in spec | Solution Architecture | Confirm whether an idempotency key header is required and its scope |
-| OI-9 | Transaction scope across Ask, AskVersion, Task, Comment, Audit, and Attachment entities — explicitly unconfirmed in spec (Assumption 1) | Solution Architecture | Confirm atomic transaction boundary |
-| OI-10 | "New-version only" field semantics for `pml`, `titlingCategory`, `transitionalCoach` (BR9, BR18, BR19) — not clarified whether this create operation is the new-version context | Business Analysis | Clarify whether new-version-only fields are required or optional on initial create |
-| OI-11 | HTTP 422 for business rule violations vs Master LLD error catalogue (MLLD §12.2) which defines only 400 for validation_failed — 422 not listed | Solution Architecture | Confirm 422 is an approved status code for business rule violations in this platform |
-| OI-12 | Leadership submitter routing shortcut detail unconfirmed in Master LLD (MLLD §7.4, open item LLD T03) | Solution Architecture | Confirm routing shortcut design is approved |
-| OI-13 | `numberofresources` field appears twice in the ADO API Details section — assumed to be a documentation error and the field appears once | Business Analysis | Confirm field appears once and clarify intended semantics |
+| OI-1 | Exact application permission code required to call POST /core-asks (e.g. ASK.CREATE) is not defined in the specification. | Security | Confirm permission code before authorization policy can be finalised. |
+| OI-2 | Definition of leadership-group membership used to route SUBMIT to statusId 145 vs 127 — which role(s) or group(s) qualify — is not specified. | Business Analysis | Confirm role or group criteria before workflow routing logic can be implemented. |
+| OI-3 | Specification returns 422 for endDate and fteAmount business validation failures; MLLD 12.2 defines only 400 validation_failed for invalid requests. These two sources conflict. Card uses 400 pending resolution. | Solution Architecture | Confirm approved HTTP status code for business validation failures before error contract is finalised. |
+| OI-4 | buttonValue=Exit as a POST /core-asks call with no persistence has no precedent in the Master LLD API catalogue. Success status code (204 or other) and whether the endpoint should accept this call are unresolved. | Solution Architecture | Confirm whether Exit is an API concern or client-side navigation only. |
+| OI-5 | The specification request and response schemas contain a duplicate field numberofresources with two different values (1 and 2) in the same object. This is a specification defect. | API Contract owner | Resolve duplicate field before schema can be modelled. |
+| OI-5b | Exact reference IDs for the 'first option' of needReasonId and generalSpecialityNeedId that trigger clearing rules (BR4, BR5) are not defined. | Business Analysis | Provide reference data IDs for clearing rule conditions. |
+| OI-4b | Exact reference IDs constituting the 'top-3 set' for levelNeedId that make rolePostingId mandatory (BR13) are not defined. | Business Analysis | Provide reference data IDs for the top-3 set. |
+| OI-6 | File-upload contract for the documents field (MIME types, size limits, number of files, multipart vs base64 encoding) is represented only as 'file upload array' in the specification. | API Contract owner | Define upload contract before endpoint schema can be approved. |
+| OI-7 | Whether a client-supplied idempotency key is required to prevent duplicate ASK creation on retry is not addressed in the specification. | Solution Architecture | Confirm idempotency key requirement and scope (REL 001). |
+| OI-8 | Transaction scope — whether Ask, AskVersion, WorkflowTask, AskComment, AskAttachmentLink and OutboxMessage must all commit in a single SaveChangesAsync, or whether attachment handling is deferred — is explicitly noted as unconfirmed in the specification. | Solution Architecture | Confirm transaction boundary before DATA 003 compliance can be verified. |
+| OI-9 | Outbox event type, version, minimal payload, recipient rule and template key for the WorkflowTaskCreated event emitted on SUBMIT are not defined. | Business Analysis | Provide event specification before REL 002 and NTF 001 can be implemented. |
+| OI-10 | BU scope rule — which BusinessUnit(s) the caller must belong to in order to create a Core ASK — is not specified. | Security | Confirm BU scope rule before SEC 002 authorization can be implemented. |
+| OI-11 | Whether needReasonId = retirement exempts endDate entirely or only from the 'must be after projectedStartDate' rule is ambiguous in the specification. | Business Analysis | Clarify retirement exemption scope for BR14. |
+| OI-12 | Specification path is POST /core-asks; MLLD 15 proposed catalogue defines POST /api/v1/asks for Core or Rotational ASK creation. Path and type-discriminator approach must be confirmed. | Solution Architecture | Confirm approved endpoint path before route contract is finalised. |
