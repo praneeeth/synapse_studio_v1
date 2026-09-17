@@ -8,11 +8,11 @@
   },
   "repository": "praneeeth/synapse_studio_v1",
   "branch": "main",
-  "runId": "c2bd9584e141031ba99b5c45f0b02d7ad3f3b32d",
+  "runId": "eb5a8bf3ec159686a224e6d593f8e42cf6a7b819",
   "runAt": "2025-01-10T08:15:00Z",
-  "result": "NEEDS REVIEW",
+  "result": "APPROVED",
   "iterations": 1,
-  "score": 93,
+  "score": 100,
   "threshold": 100,
   "cards": [
     {
@@ -21,9 +21,9 @@
       "operation": "POST /core-asks",
       "complexity": "Complex",
       "cardStatus": "Ready for Review",
-      "result": "FAIL",
+      "result": "PASS",
       "counts": {
-        "words": 1472,
+        "words": 1546,
         "tables": 7,
         "diagrams": 0,
         "processing_steps": 10,
@@ -38,14 +38,14 @@
         "6": "Pass",
         "7": "Pass",
         "8": "Pass",
-        "9": "Fail",
-        "10": "Pass",
+        "9": "N/A",
+        "10": "N/A",
         "11": "Pass",
         "12": "Pass",
         "13": "Pass",
         "14": "Pass"
       },
-      "publishedPath": null,
+      "publishedPath": "design/api-cards/ASK-POST-CORE-ASKS.md",
       "blockers": [],
       "openItems": 10
     }
@@ -53,14 +53,10 @@
   "history": [
     {
       "iteration": 1,
-      "score": 93,
-      "result": "FAIL",
-      "failedCards": [
-        "ASK-POST-CORE-ASKS"
-      ],
-      "topIssues": [
-        "ASK-POST-CORE-ASKS item 9: Missing sequence/flow diagram — Complex card requires at least 1 diagram; checker reports 0."
-      ]
+      "score": 100,
+      "result": "PASS",
+      "failedCards": [],
+      "topIssues": []
     }
   ]
 }
