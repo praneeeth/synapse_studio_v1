@@ -6,10 +6,13 @@
     "id": "1857",
     "storyId": "US-ASK-001"
   },
+  "repository": "praneeeth/synapse_studio_v1",
+  "branch": "main",
+  "runId": "c2bd9584e141031ba99b5c45f0b02d7ad3f3b32d",
   "runAt": "2025-01-10T08:15:00Z",
   "result": "NEEDS REVIEW",
   "iterations": 1,
-  "score": 57,
+  "score": 93,
   "threshold": 100,
   "cards": [
     {
@@ -20,87 +23,43 @@
       "cardStatus": "Ready for Review",
       "result": "FAIL",
       "counts": {
-        "words": 1943,
-        "tables": 8,
+        "words": 1472,
+        "tables": 7,
         "diagrams": 0,
-        "processing_steps": 9,
-        "test_scenarios": 0
+        "processing_steps": 10,
+        "test_scenarios": 12
       },
       "checklist": {
-        "1": "Fail",
-        "2": "Fail",
-        "3": "Fail",
+        "1": "Pass",
+        "2": "Pass",
+        "3": "Pass",
         "4": "Pass",
         "5": "Pass",
-        "6": "Fail",
+        "6": "Pass",
         "7": "Pass",
         "8": "Pass",
         "9": "Fail",
         "10": "Pass",
-        "11": "Fail",
+        "11": "Pass",
         "12": "Pass",
         "13": "Pass",
-        "14": "Fail"
+        "14": "Pass"
       },
       "publishedPath": null,
       "blockers": [],
-      "openItems": 11,
-      "issues": [
-        "Template schema: identification field 'API ID' missing or empty.",
-        "Template schema: identification field 'Operation' missing or empty.",
-        "Template schema: identification field 'Module' missing or empty.",
-        "Template schema: identification field 'Purpose' missing or empty.",
-        "Template schema: identification field 'Complexity' missing or empty.",
-        "Template schema: identification field 'Sources' missing or empty.",
-        "Template schema: identification field 'Status' missing or empty.",
-        "Content limit: 0 test scenarios (expected 6 to 12)."
-      ],
-      "warnings": [
-        "Sections not in the template: api identification."
-      ],
-      "feedback": [
-        {
-          "section": "API Identification",
-          "problem": "The identification section heading is rendered as 'api identification' (lowercase) rather than the template-required 'API Identification'. All seven identification fields (API ID, Operation, Module, Purpose, Complexity, Sources, Status) are reported missing.",
-          "fix": "Rename the section heading to exactly 'API Identification' (title case) and ensure the table contains all seven required fields."
-        },
-        {
-          "section": "Authorization (section 5.3) — checker item 6",
-          "problem": "Permission described in plain English as 'Create New ASK' but no RBAC permission code provided and field not marked TBD with a linked open item.",
-          "fix": "Set Permission to 'TBD — RBAC permission code for Create New ASK not yet assigned; see Open Items (owner: Security)'."
-        },
-        {
-          "section": "Contract Summary (section 5.2) — checker item 9",
-          "problem": "Transaction boundary, concurrency token strategy and idempotency requirement not stated. Multi-aggregate write operation requires these to be explicitly defined or marked TBD.",
-          "fix": "Add Idempotency and Concurrency fields to Contract Summary table; mark transaction scope TBD with open item referencing Solution Architecture."
-        },
-        {
-          "section": "Errors and Tests (section 5.8) — checker item 11",
-          "problem": "Zero test scenarios found. DC-R1 requires 6–12 named scenarios for a Complex card. All seven acceptance criteria (AC1–AC7) lack a named test. 422 vs 400 conflict not resolved in Errors section.",
-          "fix": "Add at least 8 named test scenarios covering AC1–AC7 plus unauthorized caller. Add 422 vs 400 conflict entry in Errors section marked TBD with open item for Solution Architecture."
-        },
-        {
-          "section": "API Identification — Status field / checker item 14",
-          "problem": "Card has multiple unresolved Master LLD conflicts (path, HTTP status codes, combined vs. split endpoint, no-op POST) and missing facts. Should be marked 'Blocked' or each conflict must have owner sign-off in section 5.9.",
-          "fix": "Either change Status to 'Blocked' with all conflicts having Owner and Decision Required columns, or retain 'Ready for Review' only after all open items in section 5.9 have Owner and Decision Required entries."
-        }
-      ]
+      "openItems": 10
     }
   ],
   "history": [
     {
       "iteration": 1,
-      "score": 57,
+      "score": 93,
       "result": "FAIL",
       "failedCards": [
         "ASK-POST-CORE-ASKS"
       ],
       "topIssues": [
-        "Identification section heading is 'api identification' (lowercase) — checker cannot locate any identification fields; all 7 fields reported missing",
-        "Zero test scenarios written — minimum 6 required for a Complex card; all 7 acceptance criteria (AC1–AC7) lack a named test",
-        "Permission field contains plain-English name only — no RBAC permission code and no TBD marker with open item inside the Authorization section",
-        "Transaction boundary, concurrency token and idempotency not stated in Contract Summary — required for multi-aggregate write operation",
-        "422 vs 400 conflict for business rule violations not resolved in Errors section — Master LLD error catalogue does not include 422"
+        "ASK-POST-CORE-ASKS item 9: Missing sequence/flow diagram — Complex card requires at least 1 diagram; checker reports 0."
       ]
     }
   ]
