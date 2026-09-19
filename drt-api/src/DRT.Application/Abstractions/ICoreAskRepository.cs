@@ -15,5 +15,12 @@ public interface ICoreAskRepository
     Task AddWorkflowTaskAsync(WorkflowTask task, CancellationToken cancellationToken);
     Task AddAuditRecordAsync(AskAuditRecord audit, CancellationToken cancellationToken);
     Task AddOutboxMessageAsync(OutboxMessage message, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads a Core ASK by its primary key. Returns null if not found.
+    /// Used by the Cancel Core ASK use case (US-ASK-015).
+    /// </summary>
+    Task<Ask?> GetByIdAsync(int askId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
