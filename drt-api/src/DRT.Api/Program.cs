@@ -14,7 +14,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Audience = builder.Configuration["Entra:Audience"];
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // TODO: US-ASK-015 - Confirm the exact group claim name and group object ID for DPP Operations Editor
+    // in the DRT RBAC matrix. The policy below is a placeholder until the approved group claim is confirmed.
+    options.AddPolicy("DppOperationsEditor", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireClaim("groups") // TODO: replace with confirmed group claim and value
+    );
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -22,6 +30,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register application use cases
 builder.Services.AddScoped<DRT.Application.UseCases.CoreAsks.ICreateCoreAskUseCase,
     DRT.Application.UseCases.CoreAsks.CreateCoreAskUseCase>();
+
+builder.Services.AddScoped<DRT.Application.UseCases.CoreAsks.ICancelCoreAskUseCase,
+    DRT.Application.UseCases.CoreAsks.CancelCoreAskUseCase>();
 
 // Register repositories
 builder.Services.AddScoped<DRT.Application.Abstractions.ICoreAskRepository,

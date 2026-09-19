@@ -1,5 +1,6 @@
 using DRT.Application.Abstractions;
 using DRT.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace DRT.Infrastructure.Persistence.Repositories;
 
@@ -35,6 +36,14 @@ public sealed class CoreAskRepository : ICoreAskRepository
 
     public async Task AddOutboxMessageAsync(OutboxMessage message, CancellationToken cancellationToken)
         => await _dbContext.OutboxMessages.AddAsync(message, cancellationToken);
+
+    /// <summary>
+    /// Loads a Core ASK by its primary key. Returns null if not found.
+    /// Used by the Cancel Core ASK use case (US-ASK-015).
+    /// </summary>
+    public async Task<Ask?> GetByIdAsync(int askId, CancellationToken cancellationToken)
+        => await _dbContext.Asks
+            .FirstOrDefaultAsync(a => a.Id == askId, cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
         => _dbContext.SaveChangesAsync(cancellationToken);
