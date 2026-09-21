@@ -11,7 +11,7 @@ namespace DRT.Application.UseCases.CoreAsks;
 /// </summary>
 public sealed class CancelCoreAskUseCase : ICancelCoreAskUseCase
 {
-    // Status constants from the design card.
+    // Status constants from the design card (US-ASK-015).
     private const int StatusCancelled = 577;
     private const int StatusCompleted = 135;
 
@@ -81,16 +81,7 @@ public sealed class CancelCoreAskUseCase : ICancelCoreAskUseCase
         var now = DateTimeOffset.UtcNow;
 
         // Step 6a: Execute domain cancellation on the aggregate.
-        try
-        {
-            ask.Cancel(cancelledByIdentity, now);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return CancelCoreAskResult.Failure(
-                "concurrency_conflict",
-                "The ASK has been modified by another user");
-        }
+        ask.Cancel(cancelledByIdentity, now);
 
         // Step 6b: Create Comment record.
         var comment = AskComment.CreateForCancellation(
@@ -110,11 +101,15 @@ public sealed class CancelCoreAskUseCase : ICancelCoreAskUseCase
         await _repository.AddAuditRecordAsync(audit, cancellationToken);
 
         // Step 7: Commit all changes in a single transaction.
+        // Concurrency conflicts (version mismatch) are surfaced as ConcurrencyException
+        // by the repository and propagate as unexpected errors; the controller maps them.
+        // The repository implementation catches DbUpdateConcurrencyException and rethrows
+        // as a domain-neutral exception to keep this layer free of EF Core dependencies.
         try
         {
             await _repository.SaveChangesAsync(cancellationToken);
         }
-        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        catch (AskConcurrencyException)
         {
             return CancelCoreAskResult.Failure(
                 "concurrency_conflict",
