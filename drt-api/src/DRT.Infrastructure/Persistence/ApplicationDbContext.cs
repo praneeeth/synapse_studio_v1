@@ -17,6 +17,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<AskAuditRecord> AskAuditRecords => Set<AskAuditRecord>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    // Rotational ASK entities (ASK-POST-CORE-ASKS)
+    public DbSet<RotationalAskDetail> RotationalAskDetails => Set<RotationalAskDetail>();
+    public DbSet<RotationalAskBuPlan> RotationalAskBuPlans => Set<RotationalAskBuPlan>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

@@ -34,9 +34,17 @@ builder.Services.AddScoped<DRT.Application.UseCases.CoreAsks.ICreateCoreAskUseCa
 builder.Services.AddScoped<DRT.Application.UseCases.CoreAsks.ICancelCoreAskUseCase,
     DRT.Application.UseCases.CoreAsks.CancelCoreAskUseCase>();
 
+// ASK-POST-CORE-ASKS: unified Create ASK use case (Core + Rotational)
+builder.Services.AddScoped<DRT.Application.UseCases.Asks.ICreateAskUseCase,
+    DRT.Application.UseCases.Asks.CreateAskUseCase>();
+
 // Register repositories
 builder.Services.AddScoped<DRT.Application.Abstractions.ICoreAskRepository,
     DRT.Infrastructure.Persistence.Repositories.CoreAskRepository>();
+
+// ASK-POST-CORE-ASKS: unified Create ASK repository
+builder.Services.AddScoped<DRT.Application.Abstractions.ICreateAskRepository,
+    DRT.Infrastructure.Persistence.Repositories.CreateAskRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
