@@ -1,0 +1,166 @@
+{
+  "workflow": "API_CONTRACT",
+  "stage": "PLANNER",
+  "status": "BLOCKED",
+  "ticketId": "1857",
+  "storyId": "US-ASK-001",
+  "owner": "praneeeth",
+  "repoName": "synapse_studio_v1",
+  "branch": "main",
+  "runFolder": "design/runs/1857",
+  "cardPlanPath": "design/runs/1857/design-card-plan.json",
+  "apiCount": 1,
+  "cardsUsed": [],
+  "cardsSkipped": ["ASK-POST-CORE-ASKS"],
+  "mode": "FIRST_CONTRACT",
+  "contractReadProof": "folder read, file absent",
+  "infoTitle": "",
+  "existing": {
+    "operations": [],
+    "schemas": []
+  },
+  "plan": {
+    "operations": [],
+    "schemas": []
+  },
+  "openPoints": [
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Exact application permission code required to call POST /core-asks (e.g. ASK.CREATE) is not defined in the specification.",
+      "owner": "Security",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Definition of leadership-group membership used to route SUBMIT to statusId 145 vs 127 — which role(s) or group(s) qualify — is not specified.",
+      "owner": "Business Analysis",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Exact reference IDs for the 'first option' of needReasonId and generalSpecialityNeedId that trigger clearing rules (BR4, BR5) are not defined.",
+      "owner": "Business Analysis",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Exact reference IDs constituting the 'top-3 set' for levelNeedId that make rolePostingId mandatory (BR13) are not defined.",
+      "owner": "Business Analysis",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "File-upload contract for the documents field (MIME types, size limits, number of files, multipart vs base64 encoding) is represented only as 'file upload array' in the specification.",
+      "owner": "API Contract owner",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Whether a client-supplied idempotency key is required to prevent duplicate ASK creation on retry is not addressed in the specification.",
+      "owner": "Solution Architecture",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Transaction scope — whether Ask, AskVersion, WorkflowTask, AskComment, AskAttachmentLink and OutboxMessage must all commit in a single SaveChangesAsync, or whether attachment handling is deferred — is explicitly noted as unconfirmed in the specification.",
+      "owner": "Solution Architecture",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Outbox event type, version, minimal payload, recipient rule and template key for the WorkflowTaskCreated event emitted on SUBMIT are not defined.",
+      "owner": "Business Analysis",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "BU scope rule — which BusinessUnit(s) the caller must belong to in order to create a Core ASK — is not specified.",
+      "owner": "Security",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Whether needReasonId = retirement exempts endDate entirely or only from the 'must be after projectedStartDate' rule is ambiguous in the specification.",
+      "owner": "Business Analysis",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Meaning and intended cardinality of the duplicate numberofresources key in the request/response schema",
+      "owner": "Product Owner",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "missingFact",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Whether fYear and regionId are required or optional, and their validation rules",
+      "owner": "Product Owner",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "difference",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "numberofresources field appears twice in the request and response schema with different values (1 and 2)",
+      "owner": "Solution Architecture",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "difference",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "fYear and regionId present in the API Details request schema but not listed in Functional Requirements field list",
+      "owner": "Solution Architecture",
+      "resolution": "",
+      "blocking": false
+    },
+    {
+      "source": "difference",
+      "cardId": "ASK-POST-CORE-ASKS",
+      "item": "Workflow status IDs 123, 127, 145 used in routing rules",
+      "owner": "Solution Architecture",
+      "resolution": "",
+      "blocking": false
+    }
+  ],
+  "blocked": [
+    {
+      "cardId": "ASK-POST-CORE-ASKS",
+      "reason": "Specification uses HTTP 422 for business validation failures but MLLD 12.2 defines only 400 validation_failed. Conflict must be resolved before error contract can be finalised.",
+      "owner": "Solution Architecture"
+    },
+    {
+      "cardId": "ASK-POST-CORE-ASKS",
+      "reason": "Specification defines POST /core-asks but MLLD 15 proposed catalogue defines POST /api/v1/asks. Path and type-discriminator approach must be confirmed.",
+      "owner": "Solution Architecture"
+    },
+    {
+      "cardId": "ASK-POST-CORE-ASKS",
+      "reason": "Request and response schemas contain a duplicate field numberofresources. This specification defect must be resolved.",
+      "owner": "API Contract owner"
+    }
+  ],
+  "errors": []
+}
