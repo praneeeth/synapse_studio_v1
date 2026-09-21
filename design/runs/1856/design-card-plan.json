@@ -1,0 +1,172 @@
+{
+  "workflow": "LLD",
+  "stage": "design_card_planner",
+  "status": "CONTINUE",
+  "message": "",
+  "iteration": 0,
+  "maxIterations": 1,
+  "ticket": {
+    "system": "ADO",
+    "id": "1856",
+    "adoId": "1856",
+    "storyId": "US-ASK-005",
+    "title": "Core ASK API – Retrieve Core ASK Comments (US-ASK-005)"
+  },
+  "runFolder": "design/runs/1856",
+  "plan": {
+    "apiCount": 1,
+    "sourceIndex": {
+      "US-ASK-005-BR1": "Server always filters comments using isDraft=false and isActive=true",
+      "US-ASK-005-BR2": "This filtering is not client-tunable",
+      "US-ASK-005-BR3": "Empty comments list must return 200",
+      "US-ASK-005-FR1": "Expose GET /core-asks/{askId}/comments",
+      "US-ASK-005-FR2": "Accept required askId",
+      "US-ASK-005-FR3": "Accept optional version",
+      "US-ASK-005-FR4": "Return comments array with: commentId, requestId, moduleTypeId, comment,",
+      "US-ASK-005-VR1": "askId must be valid",
+      "US-ASK-005-VR2": "version, if provided, must be valid",
+      "US-ASK-005-VR3": "askId must exist",
+      "US-ASK-005-ER1": "Return 404 if askId is not found",
+      "US-ASK-005-ER2": "Return 200 with empty comments array when no comments exist",
+      "US-ASK-005-DEP1": "Comment store",
+      "US-ASK-005-DEP2": "Core ASK existence validation",
+      "US-ASK-005-DEP3": "Record access authorization",
+      "US-ASK-005-AS1": "Comment ordering is not explicitly defined in the contract",
+      "US-ASK-005-AS2": "The endpoint is read-only and returns stored metadata only",
+      "AC1": "Given a valid Core ASK exists with active comments When the client",
+      "AC2": "Given a Core ASK has draft or inactive comments in storage When the",
+      "AC3": "Given a valid Core ASK exists with no active non-draft comments When the",
+      "AC4": "Given no Core ASK exists for the given askId When the client calls"
+    },
+    "cards": [
+      {
+        "cardType": "api",
+        "cardId": "ASK-GET-CORE-ASKS-ID-COMMENTS",
+        "module": "ASK",
+        "method": "GET",
+        "path": "/core-asks/{askId}/comments",
+        "proposed": {
+          "operationId": "getCoreAskComments",
+          "requestSchema": "GetCoreAskCommentsRequest",
+          "responseSchema": "GetCoreAskCommentsResponse"
+        },
+        "complexity": "Simple",
+        "complexityReason": "Read-only operation returning stored comment metadata; no state change, no workflow transition, no outbox event, no external integration.",
+        "sources": [
+          "US-ASK-005",
+          "ADO 1856",
+          "US-ASK-005-BR1",
+          "US-ASK-005-BR2",
+          "US-ASK-005-BR3",
+          "US-ASK-005-FR1",
+          "US-ASK-005-FR2",
+          "US-ASK-005-FR3",
+          "US-ASK-005-FR4",
+          "US-ASK-005-VR1",
+          "US-ASK-005-VR2",
+          "US-ASK-005-VR3",
+          "US-ASK-005-ER1",
+          "US-ASK-005-ER2",
+          "US-ASK-005-AS1",
+          "US-ASK-005-AS2",
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4"
+        ],
+        "standards": [
+          "API 001",
+          "API 002",
+          "SEC 001",
+          "SEC 002",
+          "DATA 001",
+          "ARCH 001",
+          "ARCH 002",
+          "OBS 001",
+          "TEST 001"
+        ],
+        "differences": [
+          {
+            "item": "Path prefix and resource naming",
+            "specValue": "/core-asks/{askId}/comments (no /api/v1 prefix; uses singular 'core-asks' resource segment)",
+            "masterLldValue": "Master LLD proposed catalogue uses /api/v1/asks/{id} prefix with plural 'asks'; no /core-asks sub-path listed",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Path parameter type",
+            "specValue": "askId is typed as integer in the story API Details",
+            "masterLldValue": "Master LLD data conventions specify GUID or approved database-generated key as primary key; integer type not confirmed",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Response field: requestId",
+            "specValue": "requestId returned in comment object (integer, e.g. 12345)",
+            "masterLldValue": "No requestId field listed in approved ASK aggregate entities (Ask, AskVersion, AskResource, AskComment, AskAttachmentLink)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Response field: moduleTypeId",
+            "specValue": "moduleTypeId returned in comment object",
+            "masterLldValue": "No moduleTypeId field listed in approved ASK aggregate entities",
+            "owner": "Solution Architecture"
+          }
+        ],
+        "missingFacts": [
+          {
+            "item": "Exact permission code required to call this endpoint (e.g. ASK.READ or equivalent)",
+            "owner": "Security"
+          },
+          {
+            "item": "BU scope rule: whether the caller must belong to the same BU as the ASK owner to retrieve comments",
+            "owner": "Security"
+          },
+          {
+            "item": "Approved OpenAPI operation ID and schema component names for this endpoint",
+            "owner": "API Contract Owner"
+          },
+          {
+            "item": "Confirmed /api/v1 prefix and final route: whether path is /api/v1/asks/{id}/comments or /core-asks/{askId}/comments",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Confirmed primary key type for askId: integer (as stated in story) vs GUID (Master LLD convention)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Comment ordering rule: story AS1 states ordering is not defined; sort order for the response array is unspecified",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Definition and source table/entity for requestId field in the comment response object",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Definition and source table/entity for moduleTypeId field in the comment response object",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Whether version query parameter filters by AskVersion.version or a separate comment version field",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Approved RBAC matrix row confirming which roles (DPP Operations Editor, PPL, DPP Leadership, etc.) may call this endpoint",
+            "owner": "Security"
+          }
+        ],
+        "cardStatus": "Ready for Review",
+        "blockers": [],
+        "draftPath": "design/drafts/ASK-GET-CORE-ASKS-ID-COMMENTS.draft.md",
+        "targetPath": "design/api-cards/ASK-GET-CORE-ASKS-ID-COMMENTS.md"
+      }
+    ],
+    "assumptions": [
+      "Comment ordering is not explicitly defined in the contract (US-ASK-005-AS1); the card treats sort order as a missing fact pending Business Analysis confirmation.",
+      "The endpoint is read-only and returns stored metadata only (US-ASK-005-AS2); no state change or outbox event is planned.",
+      "askId is treated as an integer path parameter as stated in the story API Details; alignment with Master LLD GUID convention is recorded as a difference for Solution Architecture."
+    ]
+  },
+  "story": "# [ADO STORY DETAILS]\n- **Story ID:** 1856\n- **Title:** Core ASK API – Retrieve Core ASK Comments (US-ASK-005)\n\n## Description\nUser Story\nID: US-ASK-005\nAs a consuming client,\nI want to retrieve the comments for a Core ASK,\nSo that the application can display prior non-draft active comments for the selected ASK version.\nBusiness Objective\nEnable users to review comment history associated with a Core ASK in a consistent and read-only manner.\nFeature Description\nThis story covers the API endpoint that returns active, non-draft comments for a Core ASK and optional version.\nScope – Included\nRetrieve comments by askId\nOptional retrieval by version\nReturn comment metadata\nScope – Excluded\nCreate comment\nEdit comment\nDelete comment\nDraft comment retrieval customization\nPreconditions\nA Core ASK exists for the given askId\nCaller is authorized to view the record\nPostconditions\nActive, non-draft comments are returned\nNo data is changed\nBusiness Rules\nServer always filters comments using isDraft=false and isActive=true\nThis filtering is not client-tunable\nEmpty comments list must return 200\nFunctional Requirements\nExpose GET /core-asks/{askId}/comments\nAccept required askId\nAccept optional version\nReturn comments array with: commentId, requestId, moduleTypeId, comment, isDraft, isActive, version, createdBy, createdOn, modifiedBy, modifiedOn\nValidation Rules\naskId must be valid\nversion, if provided, must be valid\naskId must exist\nError Handling / Exception Scenarios\nReturn 404 if askId is not found\nReturn 200 with empty comments array when no comments exist\nAPI Details\nEndpoint: /core-asks/{askId}/comments\nMethod: GET\nPath Params: askId : integer, required\nQuery Params: version : integer, optional\nResponse:\n{\n  \"comments\": [\n    {\n      \"commentId\": 0,\n      \"requestId\": 12345,\n      \"moduleTypeId\": 0,\n      \"comment\": \"string\",\n      \"isDraft\": false,\n      \"isActive\": true,\n      \"version\": 1,\n      \"createdBy\": \"string\",\n      \"createdOn\": \"1970-01-01T00:00:00Z\",\n      \"modifiedBy\": \"string\",\n      \"modifiedOn\": \"1970-01-01T00:00:00Z\"\n    }\n  ]\n}\nDependencies\nComment store\nCore ASK existence validation\nRecord access authorization\nAssumptions\nComment ordering is not explicitly defined in the contract\nThe endpoint is read-only and returns stored metadata only\nStory Points\n2\nDefinition of Done\nEndpoint returns only active, non-draft comments\nEmpty result behavior is implemented\nError handling is implemented\nAPI contract is tested and documented\nAcceptance Criteria\nScenario: Retrieve comments successfully\nGiven a valid Core ASK exists with active comments\nWhen the client calls GET /core-asks/{askId}/comments\nThen the API returns 200 with the comments list\nScenario: Exclude draft and inactive comments\nGiven a Core ASK has draft or inactive comments in storage\nWhen the client calls the comments endpoint\nThen only comments with isDraft=false and isActive=true are returned\nScenario: No comments available\nGiven a valid Core ASK exists with no active non-draft comments\nWhen the client calls the comments endpoint\nThen the API returns 200 with \"comments\": []\nScenario: Core ASK not found\nGiven no Core ASK exists for the given askId\nWhen the client calls the comments endpoint\nThen the API returns 404\n\n## Acceptance Criteria",
+  "drafts": null,
+  "validation": null,
+  "history": []
+}
