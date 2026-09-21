@@ -1,0 +1,102 @@
+{
+  "workflow": "LLD",
+  "stage": "design_card_reviewer_publisher",
+  "runId": "1856-rev-1",
+  "ticket": {
+    "system": "ADO",
+    "id": "1856",
+    "adoId": "1856",
+    "storyId": "US-ASK-005",
+    "title": "Core ASK API – Retrieve Core ASK Comments (US-ASK-005)"
+  },
+  "runFolder": "design/runs/1856",
+  "iterations": 1,
+  "rubricVersion": "DC-R1",
+  "result": "FAIL",
+  "score": 93,
+  "threshold": 100,
+  "status": "NEEDS_REVIEW",
+  "cards": [
+    {
+      "cardId": "ASK-GET-CORE-ASKS-ID-COMMENTS",
+      "cardType": "api",
+      "method": "GET",
+      "path": "/core-asks/{askId}/comments",
+      "complexity": "Simple",
+      "draftPath": "design/drafts/ASK-GET-CORE-ASKS-ID-COMMENTS.draft.md",
+      "targetPath": "design/api-cards/ASK-GET-CORE-ASKS-ID-COMMENTS.md",
+      "result": "FAIL",
+      "promotion": "NOT_PROMOTED",
+      "checker": {
+        "result": "FAIL",
+        "counts": {
+          "words": 3386,
+          "tables": 4,
+          "diagrams": 0,
+          "sections": 13,
+          "processing_steps": 11,
+          "test_scenarios": 10,
+          "error_rows": 8,
+          "traceability_rows": 21
+        },
+        "issues": [
+          "Output budget: 3386 words exceeds 1500 for Simple."
+        ],
+        "warnings": []
+      },
+      "diff": null,
+      "checklist": {
+        "1": "Pass",
+        "2": "Fail",
+        "3": "Pass",
+        "4": "Pass",
+        "5": "Pass",
+        "6": "Pass",
+        "7": "Pass",
+        "8": "Pass",
+        "9": "Pass",
+        "10": "Pass",
+        "11": "Pass",
+        "12": "Pass",
+        "13": "Pass",
+        "14": "Pass"
+      },
+      "checklistReasons": {
+        "1": "cardId ASK-GET-CORE-ASKS-ID-COMMENTS, method GET, path /core-asks/{askId}/comments, module ASK, storyId US-ASK-005, ADO 1856 all match the plan.",
+        "2": "Checker returned FAIL: 3386 words exceeds the 1500-word budget for Simple complexity.",
+        "3": "Method GET and path /core-asks/{askId}/comments match story FR1 exactly.",
+        "4": "askId (required integer path param) and version (optional integer query param) match story API Details.",
+        "5": "All 11 response fields (commentId, requestId, moduleTypeId, comment, isDraft, isActive, version, createdBy, createdOn, modifiedBy, modifiedOn) present and match story FR4.",
+        "6": "BR1 (isDraft=false/isActive=true filter), BR2 (not client-tunable), BR3 (empty returns 200) all addressed in processing flow and business rules.",
+        "7": "VR1 (askId valid), VR2 (version valid if provided), VR3 (askId exists) all covered in processing flow steps 5-7 and business rules.",
+        "8": "ER1 (404 not found) and ER2 (200 empty array) both covered; additional 400, 401, 403, 500, 503 scenarios present.",
+        "9": "11 processing steps present covering token validation, actor resolution, permission check, input validation, ASK existence check, comment query with server-side filters, and response mapping.",
+        "10": "AC1→Test Scenario 1, AC2→Test Scenario 2, AC3→Test Scenario 3, AC4→Test Scenario 5 all covered.",
+        "11": "Traceability table traces 17 requirements and 4 acceptance criteria with LLD section references.",
+        "12": "10 open items and 4 differences documented with named owners.",
+        "13": "Audit Summary present with status Ready for Review, 10 validation findings, and Conditional readiness statement listing blocking items.",
+        "14": "No secrets, tokens, connection strings, or prohibited content found in the card."
+      },
+      "feedback": [
+        {
+          "section": "API Identification / Card-level",
+          "problem": "The draft is 3386 words, which exceeds the 1500-word budget for Simple complexity by 1886 words. The Design Card Checker returned FAIL on this basis.",
+          "fix": "Condense all sections to fit within the 1500-word Simple budget. Reduce verbose prose in Processing Flow, Business & Workflow Rules, Validation Findings, and Test Scenarios to concise bullet points or table rows. Remove duplicated content between sections."
+        }
+      ]
+    }
+  ],
+  "history": [
+    {
+      "iteration": 1,
+      "score": 93,
+      "result": "FAIL",
+      "failedCards": [
+        "ASK-GET-CORE-ASKS-ID-COMMENTS"
+      ],
+      "topIssues": [
+        "ASK-GET-CORE-ASKS-ID-COMMENTS: word count 3386 exceeds Simple budget of 1500 words"
+      ]
+    }
+  ]
+}
