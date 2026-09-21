@@ -1,0 +1,100 @@
+{
+  "workflow": "LLD",
+  "rubricVersion": "DC-R1",
+  "ticket": {
+    "system": "ADO",
+    "id": "1858",
+    "adoId": "1858",
+    "storyId": "US-ASK-015"
+  },
+  "repository": "praneeeth/synapse_studio_v1",
+  "branch": "main",
+  "runId": "c6815dd9fac4818676b070a108a84035b7862451",
+  "runAt": "2026-09-16T10:30:00Z",
+  "result": "NEEDS REVIEW",
+  "iterations": 1,
+  "score": 86,
+  "threshold": 100,
+  "cards": [
+    {
+      "cardType": "api",
+      "cardId": "ASK-POST-ASKS-ID-CANCEL",
+      "operation": "POST /core-asks/{askId}/cancel",
+      "complexity": "Complex",
+      "cardStatus": "Ready for Review",
+      "result": "FAIL",
+      "counts": {
+        "words": 4548,
+        "tables": 4,
+        "diagrams": 0,
+        "processing_steps": 15,
+        "test_scenarios": 12,
+        "error_rows": 11,
+        "traceability_rows": 27
+      },
+      "checklist": {
+        "1": "Pass",
+        "2": "Fail",
+        "3": "Pass",
+        "4": "Pass",
+        "5": "Pass",
+        "6": "Pass",
+        "7": "Pass",
+        "8": "Pass",
+        "9": "Pass",
+        "10": "Pass",
+        "11": "Pass",
+        "12": "Pass",
+        "13": "Fail",
+        "14": "Pass"
+      },
+      "checker": {
+        "result": "FAIL",
+        "counts": {
+          "words": 4548,
+          "tables": 4,
+          "diagrams": 0,
+          "sections": 13,
+          "processing_steps": 15,
+          "test_scenarios": 12,
+          "error_rows": 11,
+          "traceability_rows": 27
+        },
+        "issues": [
+          "Prohibited content: SQL statement ('Update   Ask   Set')."
+        ],
+        "warnings": []
+      },
+      "diff": null,
+      "feedback": [
+        {
+          "section": "Data Impact",
+          "problem": "The card contains a prohibited SQL statement ('Update Ask Set') detected by the checker. DC-R1 section 1 prohibits SQL statements in design cards.",
+          "fix": "Remove the SQL statement from the Data Impact table or any other section. Describe the operation in plain English (e.g. 'Set statusId to 577, record cancelledAt and cancelledBy, increment rowVersion') without using SQL syntax."
+        },
+        {
+          "section": "Data Impact",
+          "problem": "Checker result is FAIL due to prohibited SQL content, which also fails checklist item 2 (complexity and budget correct) and item 13 (no prohibited content).",
+          "fix": "After removing the SQL statement, re-run the Design Card Checker to confirm PASS before resubmitting for review."
+        }
+      ],
+      "promotion": "NOT_PROMOTED",
+      "publishedPath": null,
+      "blockers": [],
+      "openItems": 9
+    }
+  ],
+  "history": [
+    {
+      "iteration": 1,
+      "score": 86,
+      "result": "FAIL",
+      "failedCards": [
+        "ASK-POST-ASKS-ID-CANCEL"
+      ],
+      "topIssues": [
+        "ASK-POST-ASKS-ID-CANCEL: Prohibited SQL statement ('Update Ask Set') in Data Impact section — remove SQL and use plain English description"
+      ]
+    }
+  ]
+}
