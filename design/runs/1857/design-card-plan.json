@@ -8,11 +8,75 @@
   "ticket": {
     "system": "ADO",
     "id": "1857",
-    "storyId": "US-ASK-001"
+    "adoId": "1857",
+    "storyId": "US-ASK-001",
+    "title": "Core ASK API – Create Core ASK (US-ASK-001)"
   },
   "runFolder": "design/runs/1857",
   "plan": {
     "apiCount": 1,
+    "sourceIndex": {
+      "US-ASK-001-R01": "As a permitted user I want to create and save",
+      "US-ASK-001-R02": "Enable authorized users to create new Core ASK records",
+      "US-ASK-001-R03": "This story covers the create Core ASK API including field",
+      "US-ASK-001-R04": "Create new Core ASK",
+      "US-ASK-001-R05": "Support Save & Exit SUBMIT and Exit button behaviors",
+      "US-ASK-001-R06": "Validate required and conditional fields",
+      "US-ASK-001-R07": "Support comment and documents payload",
+      "US-ASK-001-R08": "Set resulting workflow status based on button value",
+      "US-ASK-001-R09": "Caller has permission to create a new ASK",
+      "US-ASK-001-R10": "Reference data values used in the request are valid",
+      "US-ASK-001-R11": "Request body is structurally valid",
+      "US-ASK-001-R12": "For Save & Exit draft data is saved with status 123 In Progress",
+      "US-ASK-001-R13": "For SUBMIT ASK is created and routed to status 127 PPL Review",
+      "US-ASK-001-R14": "For Exit no changes are persisted",
+      "US-ASK-001-R15": "coreAskName is required and max 200 characters",
+      "US-ASK-001-R16": "dppGroupId is required and must be an active option",
+      "US-ASK-001-R17": "needReasonId generalSpecialityNeedId and levelNeedId are required",
+      "US-ASK-001-R18": "First needReasonId option clears outgoingResource employeeId projectedStartDate",
+      "US-ASK-001-R19": "First generalSpecialityNeedId option clears generalSpecialityNeedComment",
+      "US-ASK-001-R20": "generalSpecialityNeedComment is required unless generalSpecialityNeedId is first",
+      "US-ASK-001-R21": "pml is optional max 99 characters new-version only",
+      "US-ASK-001-R22": "projectedStartDate is required",
+      "US-ASK-001-R23": "endDate is required unless needReasonId is retirement must be greater",
+      "US-ASK-001-R24": "outgoingResource is derived and read-only from selected employeeId",
+      "US-ASK-001-R25": "headCountAmount is required",
+      "US-ASK-001-R26": "fteAmount is required and must not exceed headCountAmount",
+      "US-ASK-001-R27": "rolePostingId is required only when levelNeedId is in top-3 set",
+      "US-ASK-001-R28": "titlingCategory is required new-version only",
+      "US-ASK-001-R29": "transitionalCoach is optional max 99 characters new-version only",
+      "US-ASK-001-R30": "roleSummary roleResponsibility and roleQualification are all required",
+      "US-ASK-001-R31": "buttonValue controls save submit exit behavior",
+      "US-ASK-001-R32": "Expose POST /core-asks",
+      "US-ASK-001-R33": "Accept request body containing coreAskDetails comment documents buttonValue",
+      "US-ASK-001-R34": "Validate all field and business rules",
+      "US-ASK-001-R35": "On valid create return new identifiers and created entities",
+      "US-ASK-001-R36": "Support request fields coreAskName dppGroupId needReasonId generalSpecialityNeedId",
+      "US-ASK-001-R37": "Required fields must be present when applicable",
+      "US-ASK-001-R38": "Max lengths must be enforced where specified",
+      "US-ASK-001-R39": "Reference IDs must map to valid active options",
+      "US-ASK-001-R40": "endDate must not be earlier than today",
+      "US-ASK-001-R41": "endDate must be after projectedStartDate",
+      "US-ASK-001-R42": "fteAmount must not exceed headCountAmount",
+      "US-ASK-001-R43": "rolePostingId must be present when required",
+      "US-ASK-001-R44": "generalSpecialityNeedComment must be present when required",
+      "US-ASK-001-R45": "Return 400 when required fields are missing",
+      "US-ASK-001-R46": "Return 400 for invalid active option selections such as invalid dppGroupId",
+      "US-ASK-001-R47": "Return 422 when endDate is earlier than today",
+      "US-ASK-001-R48": "Return 422 when endDate is not after projectedStartDate",
+      "US-ASK-001-R49": "Return 422 when fteAmount exceeds headCountAmount",
+      "US-ASK-001-R50": "Endpoint POST /core-asks Method POST",
+      "US-ASK-001-R51": "Transaction behavior across write operations is not confirmed",
+      "US-ASK-001-R52": "buttonValue Exit is treated as no-op and does not persist",
+      "US-ASK-001-R53": "Exact attachment file-upload contract is represented as file upload array",
+      "AC1": "Save Core ASK draft successfully – buttonValue Save & Exit status 123",
+      "AC2": "Submit Core ASK as non-leadership user – status 127 PPL Review",
+      "AC3": "Submit Core ASK as leadership user – status 145 DPP Ops Review",
+      "AC4": "Exit without save – no data is saved",
+      "AC5": "FTE exceeds headcount – API returns 422",
+      "AC6": "Required field missing – API returns 400",
+      "AC7": "End date before projected start date – API returns 422"
+    },
     "cards": [
       {
         "cardType": "api",
@@ -26,36 +90,63 @@
           "responseSchema": "CreateCoreAskResponse"
         },
         "complexity": "Complex",
-        "complexityReason": "Creates multiple aggregates (Ask, AskVersion, AskResource, WorkflowTask, AskComment, AskAttachmentLink) atomically, changes workflow state conditionally based on submitter role and buttonValue, and writes an outbox event on SUBMIT.",
+        "complexityReason": "Multiple conditional business rules, three distinct button-driven behaviours (Save/Submit/Exit), leadership-group routing fork, conditional field clearing, multi-part payload (details + comment + documents), and five distinct error-response scenarios.",
         "sources": [
           "US-ASK-001",
           "ADO 1857",
-          "FR1",
-          "FR2",
-          "FR3",
-          "FR4",
-          "FR5",
-          "FR6",
-          "FR7",
-          "FR8",
-          "BR1",
-          "BR2",
-          "BR3",
-          "BR4",
-          "BR5",
-          "BR6",
-          "BR7",
-          "BR8",
-          "BR9",
-          "BR10",
-          "BR11",
-          "BR12",
-          "BR13",
-          "BR14",
-          "BR15",
-          "BR16",
-          "BR17",
-          "BR18",
+          "US-ASK-001-R01",
+          "US-ASK-001-R02",
+          "US-ASK-001-R03",
+          "US-ASK-001-R04",
+          "US-ASK-001-R05",
+          "US-ASK-001-R06",
+          "US-ASK-001-R07",
+          "US-ASK-001-R08",
+          "US-ASK-001-R09",
+          "US-ASK-001-R10",
+          "US-ASK-001-R11",
+          "US-ASK-001-R12",
+          "US-ASK-001-R13",
+          "US-ASK-001-R14",
+          "US-ASK-001-R15",
+          "US-ASK-001-R16",
+          "US-ASK-001-R17",
+          "US-ASK-001-R18",
+          "US-ASK-001-R19",
+          "US-ASK-001-R20",
+          "US-ASK-001-R21",
+          "US-ASK-001-R22",
+          "US-ASK-001-R23",
+          "US-ASK-001-R24",
+          "US-ASK-001-R25",
+          "US-ASK-001-R26",
+          "US-ASK-001-R27",
+          "US-ASK-001-R28",
+          "US-ASK-001-R29",
+          "US-ASK-001-R30",
+          "US-ASK-001-R31",
+          "US-ASK-001-R32",
+          "US-ASK-001-R33",
+          "US-ASK-001-R34",
+          "US-ASK-001-R35",
+          "US-ASK-001-R36",
+          "US-ASK-001-R37",
+          "US-ASK-001-R38",
+          "US-ASK-001-R39",
+          "US-ASK-001-R40",
+          "US-ASK-001-R41",
+          "US-ASK-001-R42",
+          "US-ASK-001-R43",
+          "US-ASK-001-R44",
+          "US-ASK-001-R45",
+          "US-ASK-001-R46",
+          "US-ASK-001-R47",
+          "US-ASK-001-R48",
+          "US-ASK-001-R49",
+          "US-ASK-001-R50",
+          "US-ASK-001-R51",
+          "US-ASK-001-R52",
+          "US-ASK-001-R53",
           "AC1",
           "AC2",
           "AC3",
@@ -65,127 +156,96 @@
           "AC7"
         ],
         "standards": [
-          "ARCH 001",
-          "ARCH 002",
-          "ARCH 003",
-          "ARCH 004",
-          "DATA 001",
-          "DATA 003",
-          "DATA 004",
-          "API 001",
-          "API 002",
-          "SEC 001",
-          "SEC 002",
-          "SEC 003",
-          "WF 001",
-          "WF 003",
-          "REL 001",
-          "REL 002",
-          "NTF 001",
-          "NTF 002",
-          "OBS 001",
-          "TEST 001"
+          "Field-level validation must return 400 for missing/invalid reference data",
+          "Business-rule violations must return 422",
+          "Conditional field rules must be enforced server-side",
+          "outgoingResource must be derived/read-only; client must not set it directly",
+          "Attachment contract must follow platform file-upload standard once confirmed"
         ],
         "differences": [
           {
-            "item": "Endpoint path",
-            "specValue": "POST /core-asks",
-            "masterLldValue": "POST /api/v1/asks (with type discriminator for Core vs Rotational)",
+            "item": "numberofresources field appears twice in the request and response schema with different values (1 and 2)",
+            "specValue": "numberofresources: 1 and numberofresources: 2 both present in same object",
+            "masterLldValue": "Not defined in Master LLD – duplicate key in JSON payload is ambiguous",
             "owner": "Solution Architecture"
           },
           {
-            "item": "HTTP status code for business validation failures (endDate before today, endDate not after projectedStartDate, fteAmount exceeds headCountAmount)",
-            "specValue": "422 Unprocessable Entity",
-            "masterLldValue": "400 validation_failed (MLLD 12.2 defines 400 for invalid request; 422 is not in the approved error catalogue)",
+            "item": "fYear and regionId present in the API Details request schema but not listed in Functional Requirements field list",
+            "specValue": "fYear: int, regionId: int included in coreAskDetails",
+            "masterLldValue": "Not referenced in Master LLD field inventory",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Workflow routing on SUBMIT: leadership-group submitters route to status 145 DPP Ops Review, bypassing PPL Review",
-            "specValue": "Leadership submitters → status 145 DPP Ops Review; non-leadership → status 127 PPL Review",
-            "masterLldValue": "Core ASK baseline routing: Draft → PPL Review → DPP Ops Review. Leadership submitter shortcut noted but exact bypass path not fully specified in MLLD 7.4.",
+            "item": "Workflow status IDs 123, 127, 145 used in routing rules",
+            "specValue": "123 In Progress, 127 PPL Review, 145 DPP Ops Review",
+            "masterLldValue": "Status codes not confirmed against DRT Workflow State Transitions (KB unavailable)",
             "owner": "Solution Architecture"
-          },
-          {
-            "item": "buttonValue=Exit as a no-op API call",
-            "specValue": "Exit button sends POST /core-asks with buttonValue=Exit and expects no persistence",
-            "masterLldValue": "No equivalent no-op POST pattern in the Master LLD API catalogue; Exit is typically a client-side navigation concern",
-            "owner": "Solution Architecture"
-          },
-          {
-            "item": "Duplicate field numberofresources appears twice in both request and response schemas",
-            "specValue": "numberofresources: 1 and numberofresources: 2 both present in the same schema object",
-            "masterLldValue": "No duplicate field pattern in approved OpenAPI or entity definitions",
-            "owner": "API Contract owner"
           }
         ],
         "missingFacts": [
           {
-            "item": "Exact permission code required to call POST /core-asks",
-            "owner": "Security"
+            "item": "Definition of 'leadership group' – which attribute, role, or group membership determines whether a submitter is in the leadership group for routing to status 145",
+            "owner": "Product Owner"
           },
           {
-            "item": "Definition of leadership group membership rule for routing to status 145 vs 127",
-            "owner": "Business Analysis"
+            "item": "Definition of 'top-3 set' for levelNeedId that makes rolePostingId required – exact IDs or values not stated",
+            "owner": "Product Owner"
           },
           {
-            "item": "Status ID to name mapping: 123 = In Progress, 127 = PPL Review, 145 = DPP Ops Review — confirmation required",
-            "owner": "Business Analysis"
+            "item": "Definition of 'first option' for needReasonId and generalSpecialityNeedId – whether 'first' means lowest ID, a specific sentinel value, or UI ordering",
+            "owner": "Product Owner"
           },
           {
-            "item": "Exact reference IDs for the top-3 set of levelNeedId that triggers mandatory rolePostingId",
-            "owner": "Business Analysis"
+            "item": "Definition of 'retirement' value for needReasonId that exempts endDate requirement – exact ID or code not stated",
+            "owner": "Product Owner"
           },
           {
-            "item": "Exact reference IDs for first option of needReasonId and generalSpecialityNeedId used in clearing rules",
-            "owner": "Business Analysis"
-          },
-          {
-            "item": "File-upload contract for documents field (MIME types, size limits, number of files, multipart vs base64)",
-            "owner": "API Contract owner"
-          },
-          {
-            "item": "Idempotency key requirement and scope for this POST operation",
+            "item": "Exact file-upload contract for the documents array (MIME types, size limits, multipart vs base64, field name)",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Transaction scope confirmation for all aggregates and OutboxMessage in single SaveChangesAsync",
+            "item": "Transaction behaviour across write operations (ASK record, comment, audit, task) – story explicitly marks this as unconfirmed (US-ASK-001-R51)",
             "owner": "Solution Architecture"
           },
           {
-            "item": "Outbox event type, version, minimal payload, recipient rule and template key for SUBMIT event",
-            "owner": "Business Analysis"
+            "item": "Authorization mechanism for 'Create New ASK' capability – token claim, role name, or permission code not specified",
+            "owner": "Solution Architecture"
           },
           {
-            "item": "BU scope rule for Core ASK creation",
-            "owner": "Security"
+            "item": "Meaning and intended cardinality of the duplicate numberofresources key in the request/response schema",
+            "owner": "Product Owner"
           },
           {
-            "item": "Whether needReasonId = retirement exempts endDate entirely or only from the after-projectedStartDate rule",
-            "owner": "Business Analysis"
+            "item": "Whether fYear and regionId are required or optional, and their validation rules",
+            "owner": "Product Owner"
           },
           {
-            "item": "Approved OpenAPI operation ID and schema component names",
-            "owner": "API Contract owner"
+            "item": "HTTP response status code for a successful Save & Exit vs successful SUBMIT (201 Created vs 200 OK not specified)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Whether the Exit (no-op) path should return a specific HTTP status code and response body or simply 204",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Definition of 'new-version only' qualifier applied to pml, titlingCategory, and transitionalCoach – version discriminator field or endpoint variant not described",
+            "owner": "Product Owner"
           }
         ],
-        "cardStatus": "Blocked",
-        "blockers": [
-          "Specification uses HTTP 422 for business validation failures but MLLD 12.2 defines only 400 validation_failed. Conflict must be resolved before error contract can be finalised.",
-          "Specification defines POST /core-asks but MLLD 15 proposed catalogue defines POST /api/v1/asks. Path and type-discriminator approach must be confirmed by Solution Architecture.",
-          "Request and response schemas contain a duplicate field numberofresources. This specification defect must be resolved by the API Contract owner before the schema can be used."
-        ],
+        "cardStatus": "Ready for Review",
+        "blockers": [],
         "draftPath": "design/drafts/ASK-POST-CORE-ASKS.draft.md",
         "targetPath": "design/api-cards/ASK-POST-CORE-ASKS.md"
       }
     ],
     "assumptions": [
-      "ADO work item number 1857 is inferred from the example pairing in the DC Planner prompt instructions (US-ASK-001 ↔ ADO 1857); the specification file itself contains no explicit ADO number.",
-      "buttonValue=Exit is treated as a client-side no-op per the specification assumption; the API card notes this pattern has no precedent in the Master LLD.",
-      "The duplicate numberofresources field in the specification schema is treated as a specification defect and not modelled as two separate fields.",
-      "Status numeric IDs 123, 127, and 145 are taken directly from the specification acceptance criteria; their mapping to state names is assumed correct pending Business Analysis confirmation.",
-      "The first option clearing rules for needReasonId and generalSpecialityNeedId refer to the lowest-ID or default reference data entry; exact IDs are a missing fact for Business Analysis."
+      "Knowledge base returned HTTP 500 on both allowed attempts; DC Planner Reference, LLD Guidelines, DRT Compact API LLD Knowledge Base, DRT Master LLD, and DRT Workflow State Transitions could not be consulted. Card has been planned from ADO content alone and flagged differences/missing facts accordingly.",
+      "The duplicate numberofresources key in the JSON schema is treated as a data defect in the story, not as two separate fields.",
+      "buttonValue=Exit is treated as a no-op per the story assumption (US-ASK-001-R52); no separate change-note card is raised for it.",
+      "No Job, Integration, Notification, Data, or UI change items are described in the story; only one API card is produced."
     ]
   },
+  "story": "# [ADO STORY DETAILS]\n- **Story ID:** 1857\n- **Title:** Core ASK API – Create Core ASK (US-ASK-001)\n\n## Description\nUser Story ID: US-ASK-001\nAs a permitted user,\nI want to create and save or submit a new Core ASK through the API,\nSo that a new Core resource request can be captured for further processing.\nBusiness Objective Enable authorized users to create new Core ASK records with validated business data and proper routing based on submission intent.\nFeature Description This story covers the create Core ASK API, including field validation, conditional rules, optional draft save, submission routing, comment handling, and attachment payload support.\nScope – Included Create new Core ASK\nSupport Save & Exit, SUBMIT, and Exit button behaviors\nValidate required and conditional fields\nSupport comment and documents payload\nSet resulting workflow status based on button value and leadership-group condition\nScope – Excluded Amend existing Core ASK\nRotational ASK creation\nTransaction implementation details not confirmed in current export\nUI presentation and tooltip behavior\nPreconditions Caller has permission to create a new ASK\nReference data values used in the request are valid and active\nRequest body is structurally valid\nPostconditions For Save & Exit: draft data is saved with status 123 In Progress\nFor SUBMIT: ASK is created and routed to status 127 PPL Review for non-leadership submitters or 145 DPP Ops Review for leadership-group submitters\nFor Exit: no changes are persisted\nBusiness Rules coreAskName is required and max 200 characters\ndppGroupId is required and must be an active option\nneedReasonId, generalSpecialityNeedId, and levelNeedId are required\nFirst needReasonId option clears outgoingResource, employeeId, projectedStartDate, and endDate\nFirst generalSpecialityNeedId option clears generalSpecialityNeedComment\ngeneralSpecialityNeedComment is required unless generalSpecialityNeedId is the first option\npml is optional, max 99 characters, new-version only\nprojectedStartDate is required\nendDate is required unless needReasonId is retirement; must be greater than projectedStartDate and not earlier than today\noutgoingResource is derived and read-only from selected employeeId\nheadCountAmount is required\nfteAmount is required and must not exceed headCountAmount\nrolePostingId is required only when levelNeedId is in the top-3 set\ntitlingCategory is required, new-version only\ntransitionalCoach is optional, max 99 characters, new-version only\nroleSummary, roleResponsibility, and roleQualification are all required\nbuttonValue controls save/submit/exit behavior\nFunctional Requirements Expose POST /core-asks\nAccept request body containing: coreAskDetails, comment, documents, buttonValue\nValidate all field and business rules\nOn valid create, return new identifiers and created entities\nSupport request fields: coreAskName, dppGroupId, needReasonId, generalSpecialityNeedId, generalSpecialityNeedComment, levelNeedId, pml, projectedStartDate, endDate, outgoingResource, employeeId, headCountAmount, fteAmount, rolePostingId, titlingCategory, transitionalCoach, roleSummary, roleResponsibility, roleQualification\nValidation Rules Required fields must be present when applicable\nMax lengths must be enforced where specified\nReference IDs must map to valid active options\nendDate must not be earlier than today\nendDate must be after projectedStartDate\nfteAmount must not exceed headCountAmount\nrolePostingId must be present when required\ngeneralSpecialityNeedComment must be present when required\nError Handling / Exception Scenarios Return 400 when required fields are missing\nReturn 400 for invalid active option selections such as invalid dppGroupId\nReturn 422 when endDate is earlier than today\nReturn 422 when endDate is not after projectedStartDate\nReturn 422 when fteAmount exceeds headCountAmount\nAPI Details Endpoint: /core-asks\nMethod: POST\nRequest: { \"coreAskDetails\": { \"coreAskName\": \"string\", \"fYear\": int, \"regionId\": int, \"dppGroupId\": 0, \"needReasonId\": 0, \"generalSpecialityNeedId\": 0, \"generalSpecialityNeedComment\": \"string\", \"levelNeedId\": 0, \"pml\": \"string\", \"projectedStartDate\": \"1970-01-01\", \"endDate\": \"1970-01-01\", \"outgoingResource\": \"string\", \"employeeId\": 0, \"headCountAmount\": 0, \"fteAmount\": 0, \"rolePostingId\": 0, \"numberofresources\": 1, \"titlingCategory\": \"string\", \"transitionalCoach\": \"string\", \"roleSummary\": \"string\", \"roleResponsibility\": \"string\", \"roleQualification\": \"string\", \"numberofresources\": 2 }, \"comment\": \"string\", \"documents\": [\"file upload array\"], \"buttonValue\": \"Save & Exit | SUBMIT | Exit\" }\nResponse: { \"askId\": 12345, \"askDetailId\": 98765, \"coreAskDetails\": { ... }, \"version\": 1, \"task\": { \"taskId\": 0, \"statusId\": 0, \"assigneeId\": 0 }, \"comment\": { \"commentId\": 0 }, \"auditHistory\": { \"auditId\": 0 } }\nDependencies Reference data services for DPP Group, ASK Reason, Level, General/Specialty, Role Posting\nEmployee search/picker for employeeId\nAttachment upload handling\nWorkflow status routing service\nAuthorization for Create New ASK capability\nAssumptions Transaction behavior across write operations is not confirmed in the current export\nbuttonValue=Exit is treated as no-op and does not persist changes\nExact attachment file-upload contract is represented as \"file upload array\" in the source contract\nStory Points 8\nDefinition of Done Endpoint validates required and conditional rules\nSave, Submit, and Exit behaviors are implemented\nStatus routing works as defined\nPositive and negative scenarios are tested\nAPI contract and error mapping are documented\nAcceptance Criteria\nScenario: Save Core ASK draft successfully\nGiven the caller provides valid Core ASK data and buttonValue is Save & Exit\nWhen the client calls POST /core-asks\nThen the API saves the ASK as draft with status 123 In Progress and returns the created identifiers\nScenario: Submit Core ASK as non-leadership user\nGiven the caller provides valid Core ASK data, is not in leadership group, and buttonValue is SUBMIT\nWhen the client calls the create endpoint\nThen the API creates the ASK and routes it to status 127 PPL Review\nScenario: Submit Core ASK as leadership user\nGiven the caller provides valid Core ASK data, is in leadership group, and buttonValue is SUBMIT\nWhen the client calls the create endpoint\nThen the API creates the ASK and routes it to status 145 DPP Ops Review\nScenario: Exit without save\nGiven the caller sends buttonValue as Exit\nWhen the client calls the create endpoint\nThen no data is saved\nScenario: FTE exceeds headcount\nGiven the request contains fteAmount greater than headCountAmount\nWhen the client calls the create endpoint\nThen the API returns 422\nScenario: Required field missing\nGiven the request omits a mandatory field\nWhen the client calls the create endpoint\nThen the API returns 400\nScenario: End date before projected start date\nGiven the request contains endDate not after projectedStartDate\nWhen the client calls the create endpoint\nThen the API returns 422",
   "drafts": {
     "planPath": "design/runs/1857/design-card-plan.json",
     "written": [
