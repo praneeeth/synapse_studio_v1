@@ -1,0 +1,191 @@
+{
+  "workflow": "LLD",
+  "stage": "design_card_planner",
+  "status": "CONTINUE",
+  "message": "",
+  "iteration": 0,
+  "maxIterations": 1,
+  "ticket": {
+    "system": "ADO",
+    "id": "1858",
+    "adoId": "1858",
+    "storyId": "US-ASK-015",
+    "title": "Core ASK API – Cancel Core ASK (US-ASK-015)"
+  },
+  "runFolder": "design/runs/1858",
+  "plan": {
+    "apiCount": 1,
+    "sourceIndex": {
+      "US-ASK-015-BR1": "comment is mandatory",
+      "US-ASK-015-BR2": "Cancellation is not allowed if ASK is already Cancelled",
+      "US-ASK-015-BR3": "Caller must be in DPP Ops group",
+      "US-ASK-015-BR4": "Cancellation writes: ASK status update, Comment record",
+      "US-ASK-015-BR5": "Status constant for Cancelled is 577",
+      "US-ASK-015-BR6": "Completed status constant is 135",
+      "US-ASK-015-FR1": "Expose POST /core-asks/{askId}/cancel",
+      "US-ASK-015-FR2": "Accept required askId",
+      "US-ASK-015-FR3": "Accept request body with required comment",
+      "US-ASK-015-FR4": "Return confirmation payload including: askId, statusId, cancelledAt",
+      "US-ASK-015-VR1": "askId must be valid",
+      "US-ASK-015-VR2": "comment must be present",
+      "US-ASK-015-VR3": "ASK must exist",
+      "US-ASK-015-VR4": "ASK must not already be Cancelled or Completed",
+      "US-ASK-015-VR5": "Caller must have DPP Ops permission",
+      "US-ASK-015-ER1": "Return 404 if askId is not found",
+      "US-ASK-015-ER2": "Return 400 if comment is missing",
+      "US-ASK-015-ER3": "Return 409 if ASK is already Cancelled or Completed",
+      "US-ASK-015-ER4": "Return 403 if caller is not in DPP Ops group",
+      "US-ASK-015-DEP1": "Core ASK status management",
+      "US-ASK-015-DEP2": "Comment creation service",
+      "US-ASK-015-DEP3": "Audit history creation service",
+      "US-ASK-015-DEP4": "Authorization service for DPP Ops group membership",
+      "US-ASK-015-AS1": "Update of associated task status is unconfirmed and therefore excluded",
+      "US-ASK-015-AS2": "Comment content validation beyond presence is not specified",
+      "AC1": "Cancel Core ASK successfully – 200, status 577, comment saved, audit created",
+      "AC2": "Missing cancellation comment – returns 400",
+      "AC3": "ASK already completed (135) – returns 409",
+      "AC4": "ASK already cancelled (577) – returns 409",
+      "AC5": "User lacks permission – returns 403",
+      "AC6": "ASK not found – returns 404"
+    },
+    "cards": [
+      {
+        "cardType": "api",
+        "cardId": "ASK-POST-ASKS-ID-CANCEL",
+        "module": "ASK",
+        "method": "POST",
+        "path": "/core-asks/{askId}/cancel",
+        "proposed": {
+          "operationId": "cancelCoreAsk",
+          "requestSchema": "CancelCoreAskRequest",
+          "responseSchema": "CancelCoreAskResponse"
+        },
+        "complexity": "Complex",
+        "complexityReason": "Changes workflow state to terminal Cancelled, writes audit and comment records atomically, and enforces role-based authorization.",
+        "sources": [
+          "US-ASK-015",
+          "ADO 1858",
+          "US-ASK-015-FR1",
+          "US-ASK-015-FR2",
+          "US-ASK-015-FR3",
+          "US-ASK-015-FR4",
+          "US-ASK-015-BR1",
+          "US-ASK-015-BR2",
+          "US-ASK-015-BR3",
+          "US-ASK-015-BR4",
+          "US-ASK-015-BR5",
+          "US-ASK-015-BR6",
+          "US-ASK-015-VR1",
+          "US-ASK-015-VR2",
+          "US-ASK-015-VR3",
+          "US-ASK-015-VR4",
+          "US-ASK-015-VR5",
+          "US-ASK-015-ER1",
+          "US-ASK-015-ER2",
+          "US-ASK-015-ER3",
+          "US-ASK-015-ER4",
+          "US-ASK-015-AS1",
+          "US-ASK-015-AS2",
+          "AC1",
+          "AC2",
+          "AC3",
+          "AC4",
+          "AC5",
+          "AC6"
+        ],
+        "standards": [
+          "ARCH 001",
+          "ARCH 002",
+          "ARCH 003",
+          "ARCH 004",
+          "DATA 001",
+          "DATA 003",
+          "DATA 004",
+          "API 001",
+          "API 002",
+          "SEC 001",
+          "SEC 002",
+          "SEC 003",
+          "WF 001",
+          "WF 003",
+          "REL 001",
+          "OBS 001",
+          "TEST 001"
+        ],
+        "differences": [
+          {
+            "item": "API path prefix and resource name",
+            "specValue": "POST /core-asks/{askId}/cancel (no /api/v1 prefix; uses 'core-asks')",
+            "masterLldValue": "POST /api/v1/asks/{id}/cancel (with /api/v1 prefix; uses 'asks')",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "cancelledBy field in request body",
+            "specValue": "cancelledBy supplied by the caller in the request body",
+            "masterLldValue": "SEC 003 prohibits accepting role, assignee or recipient as authority from the browser; actor must be resolved server-side",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Success HTTP status code",
+            "specValue": "200 OK on successful cancellation (AC1)",
+            "masterLldValue": "Master LLD does not specify 200 vs 204 for terminal cancel operations; no explicit catalogue entry for this status",
+            "owner": "API Contract Owner"
+          },
+          {
+            "item": "Workflow task closure on cancellation",
+            "specValue": "Task status updates explicitly excluded from scope (AS1)",
+            "masterLldValue": "WF 003 requires atomic transition: business, task, decision, history and outbox commit together; Cancel must complete open tasks as Cancelled",
+            "owner": "Solution Architecture"
+          }
+        ],
+        "missingFacts": [
+          {
+            "item": "Status ID 577 (Cancelled) and 135 (Completed) mapping to approved workflow state names in the DRT state-transition document",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Exact permission code required for DPP Ops group cancellation action (story names group membership only, not a discrete permission code)",
+            "owner": "Security"
+          },
+          {
+            "item": "Whether an outbox event (e.g. WorkflowTaskCreated or AskCancelled) must be written on cancellation, and if so the event type, version and recipient rule",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Full list of cancellable ASK statuses beyond the two blocked states (577 Cancelled, 135 Completed); story states 'ASK is in a cancellable status' without enumerating all valid source states",
+            "owner": "Business Analysis"
+          },
+          {
+            "item": "Idempotency key requirement and scope for the cancel command (retry-sensitive state-changing operation per REL 001)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Comment entity table name and schema (story references 'Comment record with isDraft=false and isActive=true' but no approved entity name is listed in MLLD 9.2 for ASK comments)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "Audit entity table name and schema (story references 'Audit record with action Core Ask Cancelled' but no approved audit entity name is listed in MLLD 9.2)",
+            "owner": "Solution Architecture"
+          },
+          {
+            "item": "BU scope rule: whether cancellation is restricted to ASKs within the caller's BU or is global for any DPP Ops Editor",
+            "owner": "Security"
+          }
+        ],
+        "cardStatus": "Ready for Review",
+        "blockers": [],
+        "draftPath": "design/drafts/ASK-POST-ASKS-ID-CANCEL.draft.md",
+        "targetPath": "design/api-cards/ASK-POST-ASKS-ID-CANCEL.md"
+      }
+    ],
+    "assumptions": [
+      "Task status update on cancellation is excluded per AS1; WF 003 conflict is recorded as a difference and requires resolution before implementation.",
+      "cancelledBy in the request body is recorded as a difference against SEC 003; the card assumes server-side actor resolution is the correct behaviour pending confirmation.",
+      "Status constants 577 and 135 are taken as stated in the story; their mapping to approved workflow state names is a missing fact."
+    ]
+  },
+  "story": "# [ADO STORY DETAILS]\n- **Story ID:** 1858\n- **Title:** Core ASK API – Cancel Core ASK (US-ASK-015)\n\n## Description\nUser Story\nID: US-ASK-015\nAs a permitted DPP Operations user,\nI want to cancel a Core ASK by submitting a required comment,\nSo that the ASK can be marked as cancelled and an audit trail can be recorded.\nBusiness Objective\nEnable authorized users to cancel Core ASK records in valid statuses while preserving comment and audit traceability.\nFeature Description\nThis story covers the API endpoint to cancel a Core ASK. On successful cancellation, the endpoint updates the ASK status to Cancelled, stores the comment, and writes an audit entry.\nScope – Included\nCancel a Core ASK by askId\nRequire cancellation comment\nUpdate ASK status to Cancelled\nPersist comment\nPersist audit entry in response\nScope – Excluded\nCancel Rotational ASK\nTask status updates not confirmed by current export\nUI dialog content and presentation\nRBAC rule definition\nPreconditions\nThe Core ASK exists\nCaller belongs to DPP Ops group / DPP Operation Editors\nASK is in a cancellable status\nA comment is provided\nPostconditions\nASK status is updated to 577 Cancelled\nA new active non-draft comment is created\nA new audit entry with action \"Core Ask Cancelled\" is created\nBusiness Rules\ncomment is mandatory\nCancellation is not allowed if ASK is already Cancelled (577) or Completed (135)\nCaller must be in DPP Ops group\nCancellation writes: ASK status update, Comment record with isDraft=false and isActive=true, Audit record with action \"Core Ask Cancelled\"\nStatus constant for Cancelled is 577\nCompleted status constant is 135\nFunctional Requirements\nExpose POST /core-asks/{askId}/cancel\nAccept required askId\nAccept request body with required comment\nReturn confirmation payload including: askId, statusId, cancelledAt, cancelledBy, auditEntry.action, auditEntry.description, auditEntry.createdBy, auditEntry.createdOn\nValidation Rules\naskId must be valid\ncomment must be present\nASK must exist\nASK must not already be Cancelled or Completed\nCaller must have DPP Ops permission\nError Handling / Exception Scenarios\nReturn 404 if askId is not found\nReturn 400 if comment is missing\nReturn 409 if ASK is already Cancelled or Completed\nReturn 403 if caller is not in DPP Ops group\nAPI Details\nEndpoint: /core-asks/{askId}/cancel\nMethod: POST\nRequest:\n{\n  \"comment\": \"string\",\n  \"askId\": 124,\n  \"cancelledBy\": \"string\"\n}\nResponse:\n{\n  \"askId\": 12345,\n  \"statusId\": 577,\n  \"cancelledAt\": \"1970-01-01T00:00:00Z\",\n  \"cancelledBy\": \"string\",\n  \"auditEntry\": {\n    \"action\": \"Core Ask Cancelled\",\n    \"description\": \"string\",\n    \"createdBy\": \"string\",\n    \"createdOn\": \"1970-01-01T00:00:00Z\"\n  }\n}\nDependencies\nCore ASK status management\nComment creation service\nAudit history creation service\nAuthorization service for DPP Ops group membership\nAssumptions\nUpdate of associated task status is unconfirmed and therefore excluded\nComment content validation beyond presence is not specified in the contract\nStory Points\n5\nDefinition of Done\nEndpoint enforces permission and status rules\nComment is required and validated\nASK status updates to Cancelled\nAudit and comment records are created\nPositive and negative test cases are completed\nAcceptance Criteria\nScenario: Cancel Core ASK successfully\nGiven a Core ASK exists in a cancellable status and the caller is in DPP Ops group\nWhen the client calls POST /core-asks/{askId}/cancel with a valid comment\nThen the API returns 200, sets the ASK status to 577, saves the comment, and creates an audit entry\nScenario: Missing cancellation comment\nGiven a valid cancellable Core ASK\nWhen the client calls the cancel endpoint without comment\nThen the API returns 400\nScenario: ASK already completed\nGiven the Core ASK status is 135 Completed\nWhen the client calls the cancel endpoint\nThen the API returns 409\nScenario: ASK already cancelled\nGiven the Core ASK status is 577 Cancelled\nWhen the client calls the cancel endpoint\nThen the API returns 409\nScenario: User lacks permission\nGiven the caller is not in the DPP Ops group\nWhen the client calls the cancel endpoint\nThen the API returns 403\nScenario: ASK not found\nGiven the provided askId does not exist\nWhen the client calls the cancel endpoint\nThen the API returns 404",
+  "drafts": null,
+  "validation": null,
+  "history": []
+}
