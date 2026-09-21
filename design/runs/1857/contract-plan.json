@@ -61,7 +61,7 @@
       "cardId": "ASK-POST-CORE-ASKS",
       "item": "File-upload contract for the documents field (MIME types, size limits, number of files, multipart vs base64 encoding) is represented only as 'file upload array' in the specification.",
       "owner": "API Contract owner",
-      "resolution": "",
+      "resolution": "Documents are uploaded separately through the platform document upload endpoint defined in HLD §13.1. The documents field in this request should reference existing document IDs, not carry file bytes. Type: array of string (document IDs). Applied API Design Standards document upload pattern.",
       "blocking": false
     },
     {
@@ -69,7 +69,7 @@
       "cardId": "ASK-POST-CORE-ASKS",
       "item": "Whether a client-supplied idempotency key is required to prevent duplicate ASK creation on retry is not addressed in the specification.",
       "owner": "Solution Architecture",
-      "resolution": "",
+      "resolution": "API Design Standards §6 REL 001 requires Idempotency-Key header for workflow decisions and retry-sensitive commands. POST /core-asks creates a workflow instance and is retry-sensitive. Resolution: Idempotency-Key header is required.",
       "blocking": false
     },
     {
@@ -77,7 +77,7 @@
       "cardId": "ASK-POST-CORE-ASKS",
       "item": "Transaction scope — whether Ask, AskVersion, WorkflowTask, AskComment, AskAttachmentLink and OutboxMessage must all commit in a single SaveChangesAsync, or whether attachment handling is deferred — is explicitly noted as unconfirmed in the specification.",
       "owner": "Solution Architecture",
-      "resolution": "",
+      "resolution": "HLD §8.3 point 46 and §10.1 require transactional outbox pattern. All workflow state changes, task assignment, audit history and outbox records commit in one Azure SQL transaction. Resolution: All entities commit in a single SaveChangesAsync.",
       "blocking": false
     },
     {
