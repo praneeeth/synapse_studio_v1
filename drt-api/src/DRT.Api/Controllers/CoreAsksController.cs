@@ -1,13 +1,16 @@
 using DRT.Application.Abstractions;
 using DRT.Application.UseCases.CoreAsks;
 using DRT.Contracts.CoreAsks;
+using DRT.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DRT.Api.Controllers;
 
 /// <summary>
-/// POST /core-asks – Create a new Core ASK.
+/// Endpoints for Core ASK operations.
+/// POST /core-asks          – Create a new Core ASK.
+/// POST /core-asks/{askId}/cancel – Cancel an existing Core ASK (US-ASK-015).
 /// </summary>
 [ApiController]
 [Route("core-asks")]
@@ -15,15 +18,18 @@ namespace DRT.Api.Controllers;
 public sealed class CoreAsksController : ControllerBase
 {
     private readonly ICreateCoreAskUseCase _createCoreAskUseCase;
+    private readonly ICancelCoreAskUseCase _cancelCoreAskUseCase;
     private readonly IActorResolver _actorResolver;
     private readonly ILogger<CoreAsksController> _logger;
 
     public CoreAsksController(
         ICreateCoreAskUseCase createCoreAskUseCase,
+        ICancelCoreAskUseCase cancelCoreAskUseCase,
         IActorResolver actorResolver,
         ILogger<CoreAsksController> logger)
     {
         _createCoreAskUseCase = createCoreAskUseCase;
+        _cancelCoreAskUseCase = cancelCoreAskUseCase;
         _actorResolver = actorResolver;
         _logger = logger;
     }
@@ -45,19 +51,16 @@ public sealed class CoreAsksController : ControllerBase
         [FromBody] CreateCoreAskRequest request,
         CancellationToken cancellationToken)
     {
-        // Step 1 & 2: Resolve and authorize actor
         var actor = await _actorResolver.ResolveAsync(cancellationToken);
         if (actor == null)
             return Unauthorized();
 
         // TODO: Verify actor has "Create New ASK" permission for target BU scope.
         // The exact permission code is not defined in the card (open item: Authorization Permission Code).
-        // Replace the placeholder below with the confirmed permission check.
         var hasPermission = actor.Roles.Count > 0; // TODO: replace with confirmed permission check
         if (!hasPermission)
             return Forbid();
 
-        // Map request to command
         var command = new CreateCoreAskCommand
         {
             ActorId = actor.ActorId,
@@ -84,8 +87,6 @@ public sealed class CoreAsksController : ControllerBase
             RoleResponsibility = request.CoreAskDetails.RoleResponsibility ?? string.Empty,
             RoleQualification = request.CoreAskDetails.RoleQualification ?? string.Empty,
             Comment = request.Comment,
-            // TODO: Attachment identifiers should be resolved from the attachment upload service before this call.
-            // The documents array contract is TBD (open item: Attachment Upload Service Contract).
             AttachmentIdentifiers = request.Documents?.Select(d => d.Content ?? string.Empty).ToList(),
             ButtonValue = request.ButtonValue
         };
@@ -95,7 +96,7 @@ public sealed class CoreAsksController : ControllerBase
             var result = await _createCoreAskUseCase.ExecuteAsync(command, cancellationToken);
 
             if (result.IsExit)
-                return Ok(); // Exit: no persistence, return success
+                return Ok();
 
             return CreatedAtAction(nameof(CreateCoreAskAsync), result.Response);
         }
@@ -107,6 +108,107 @@ public sealed class CoreAsksController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error creating Core ASK");
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    /// <summary>
+    /// Cancels an existing Core ASK with a mandatory comment and audit trail.
+    /// Only users in the DPP Operations Editor role may cancel a Core ASK.
+    /// </summary>
+    /// <remarks>
+    /// TODO: Replace the role-name string "DPPOperationsEditor" with the confirmed
+    /// permission/policy name from the approved RBAC matrix (open item: DPP Operations Editor permission code).
+    /// </remarks>
+    [HttpPost("{askId:int}/cancel")]
+    [ProducesResponseType(typeof(CancelCoreAskResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CancelCoreAskAsync(
+        [FromRoute] int askId,
+        [FromBody] CancelCoreAskRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Step 1: Resolve authenticated actor
+        var actor = await _actorResolver.ResolveAsync(cancellationToken);
+        if (actor == null)
+        {
+            return Unauthorized(new
+            {
+                status = 401,
+                errorCode = "authentication_required",
+                message = "Authentication is required."
+            });
+        }
+
+        // Step 2: Authorize – caller must be in DPP Operations Editor role
+        // TODO: Replace role-name check with confirmed permission policy from RBAC matrix
+        // (open item: DPP Operations Editor permission code).
+        var isDppOpsEditor = actor.Roles.Contains("DPPOperationsEditor"); // TODO: confirm role name
+        if (!isDppOpsEditor)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                status = 403,
+                errorCode = "access_denied",
+                message = "You do not have permission to cancel Core ASKs."
+            });
+        }
+
+        // Step 3: Validate request body
+        if (string.IsNullOrWhiteSpace(request.Comment))
+        {
+            return BadRequest(new
+            {
+                status = 400,
+                errorCode = "validation_failed",
+                message = "Comment is required for cancellation."
+            });
+        }
+
+        var command = new CancelCoreAskCommand
+        {
+            AskId = askId,
+            Comment = request.Comment,
+            CancelledBy = actor.UserId,
+            ActorId = actor.ActorId
+        };
+
+        try
+        {
+            var result = await _cancelCoreAskUseCase.ExecuteAsync(command, cancellationToken);
+            return Ok(result.Response);
+        }
+        catch (AskNotFoundException)
+        {
+            return NotFound(new
+            {
+                status = 404,
+                errorCode = "resource_not_found",
+                message = $"Core ASK with ID {askId} not found."
+            });
+        }
+        catch (AskInvalidStateException ex)
+        {
+            return Conflict(new
+            {
+                status = 409,
+                errorCode = "concurrency_conflict",
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error cancelling Core ASK {AskId}", askId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                status = 500,
+                errorCode = "unexpected_error",
+                message = "An unexpected error occurred."
+            });
         }
     }
 }

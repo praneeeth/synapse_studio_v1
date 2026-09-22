@@ -24,6 +24,7 @@ builder.Services.AddControllers();
 // FluentValidation
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCoreAskCommandValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<CancelCoreAskCommandValidator>();
 
 // EF Core
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -31,6 +32,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Application use cases
 builder.Services.AddScoped<ICreateCoreAskUseCase, CreateCoreAskUseCase>();
+builder.Services.AddScoped<ICancelCoreAskUseCase, CancelCoreAskUseCase>();
 
 // Infrastructure ports
 builder.Services.AddScoped<ICoreAskRepository, CoreAskRepository>();
@@ -39,6 +41,8 @@ builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IAuditRepository, AuditRepository>();
 builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
 builder.Services.AddScoped<IActorResolver, ActorResolver>();
+builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+builder.Services.AddHttpContextAccessor();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

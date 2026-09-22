@@ -1,14 +1,19 @@
+using DRT.Application.Abstractions;
 using DRT.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DRT.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core DbContext for the DRT application.
+/// EF Core ApplicationDbContext.
+/// Implements IUnitOfWork so the use case can call SaveChangesAsync through the port.
 /// </summary>
-public sealed class ApplicationDbContext : DbContext, DRT.Application.Abstractions.IUnitOfWork
+public sealed class ApplicationDbContext : DbContext, IUnitOfWork
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
 
     public DbSet<Ask> Asks => Set<Ask>();
     public DbSet<AskVersion> AskVersions => Set<AskVersion>();
@@ -24,4 +29,7 @@ public sealed class ApplicationDbContext : DbContext, DRT.Application.Abstractio
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
+
+    Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+        => base.SaveChangesAsync(cancellationToken);
 }
