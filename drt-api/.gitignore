@@ -1,0 +1,15 @@
+## .NET gitignore
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+*.DS_Store
+TestResults/
+*.nupkg
+*.snupkg
+.env
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
