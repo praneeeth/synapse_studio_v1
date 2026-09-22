@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DRT.Api\DRT.Api.csproj" />
+    <ProjectReference Include="..\..\src\DRT.Application\DRT.Application.csproj" />
+    <ProjectReference Include="..\..\src\DRT.Domain\DRT.Domain.csproj" />
+    <ProjectReference Include="..\..\src\DRT.Infrastructure\DRT.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\DRT.Workflow\DRT.Workflow.csproj" />
+  </ItemGroup>
+</Project>
