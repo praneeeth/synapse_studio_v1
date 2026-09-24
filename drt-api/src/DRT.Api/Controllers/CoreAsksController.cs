@@ -2,6 +2,7 @@ using DRT.Application.Abstractions;
 using DRT.Application.UseCases.CoreAsks;
 using DRT.Contracts.CoreAsks;
 using DRT.Domain.Entities;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ namespace DRT.Api.Controllers;
 /// <summary>
 /// Endpoints for Core ASK operations.
 /// POST /core-asks          – Create a new Core ASK.
+/// POST /core-asks/search   – Search and retrieve paginated Core ASK list (Story 1859).
 /// POST /core-asks/{askId}/cancel – Cancel an existing Core ASK (US-ASK-015).
 /// </summary>
 [ApiController]
@@ -19,19 +21,122 @@ public sealed class CoreAsksController : ControllerBase
 {
     private readonly ICreateCoreAskUseCase _createCoreAskUseCase;
     private readonly ICancelCoreAskUseCase _cancelCoreAskUseCase;
+    private readonly ISearchCoreAsksUseCase _searchCoreAsksUseCase;
     private readonly IActorResolver _actorResolver;
+    private readonly IValidator<SearchCoreAsksQuery> _searchValidator;
     private readonly ILogger<CoreAsksController> _logger;
 
     public CoreAsksController(
         ICreateCoreAskUseCase createCoreAskUseCase,
         ICancelCoreAskUseCase cancelCoreAskUseCase,
+        ISearchCoreAsksUseCase searchCoreAsksUseCase,
         IActorResolver actorResolver,
+        IValidator<SearchCoreAsksQuery> searchValidator,
         ILogger<CoreAsksController> logger)
     {
         _createCoreAskUseCase = createCoreAskUseCase;
         _cancelCoreAskUseCase = cancelCoreAskUseCase;
+        _searchCoreAsksUseCase = searchCoreAsksUseCase;
         _actorResolver = actorResolver;
+        _searchValidator = searchValidator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Searches and retrieves a paginated list of Core ASKs (latest version only per askId).
+    /// Story 1859 – POST /core-asks/search
+    /// </summary>
+    /// <remarks>
+    /// TODO: Confirm exact permission codes for site-page visibility and grid-render permissions
+    /// from the approved RBAC matrix (OI-004, open item: Authorization Permission Code).
+    /// TODO: Confirm BU-scoped record visibility constraints for BUPPP, BUPIC and other
+    /// BU-specific roles (OI-004 – requires security rule export or application screenshots).
+    /// </remarks>
+    [HttpPost("search")]
+    [ProducesResponseType(typeof(SearchCoreAsksResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> SearchCoreAsksAsync(
+        [FromBody] SearchCoreAsksRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Step 1: Resolve authenticated actor
+        var actor = await _actorResolver.ResolveAsync(cancellationToken);
+        if (actor == null)
+        {
+            return Unauthorized(new
+            {
+                status = 401,
+                errorCode = "authentication_required",
+                message = "Authentication is required."
+            });
+        }
+
+        // Step 1 (continued): Authorize – site-page visibility and grid-render permission
+        // TODO: Replace placeholder permission checks with confirmed permission codes from
+        // the approved RBAC matrix (OI-004). Candidate users must be denied (T-019).
+        var hasSitePageVisibility = actor.Roles.Count > 0; // TODO: replace with confirmed site-page visibility permission check
+        if (!hasSitePageVisibility)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                status = 403,
+                errorCode = "access_denied",
+                message = "You do not have permission to view the Core ASK list."
+            });
+        }
+
+        var hasGridRenderPermission = actor.Roles.Count > 0; // TODO: replace with confirmed grid-render permission check
+        if (!hasGridRenderPermission)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                status = 403,
+                errorCode = "access_denied",
+                message = "You do not have permission to render the Core ASK grid."
+            });
+        }
+
+        // Step 2: Build and validate query
+        var query = new SearchCoreAsksQuery
+        {
+            Sort = request.Sort,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            IncludeTotalCount = request.IncludeTotalCount,
+            Filters = request.Filters
+        };
+
+        var validationResult = await _searchValidator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                status = 400,
+                errorCode = "validation_failed",
+                message = "One or more validation errors occurred.",
+                errors = validationResult.Errors.Select(e => new { field = e.PropertyName, message = e.ErrorMessage })
+            });
+        }
+
+        // Steps 3–7: Execute use case (read-only, no transaction)
+        try
+        {
+            var result = await _searchCoreAsksUseCase.ExecuteAsync(query, cancellationToken);
+            return Ok(result.Response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error searching Core ASKs");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                status = 500,
+                errorCode = "unexpected_error",
+                message = "An unexpected error occurred."
+            });
+        }
     }
 
     /// <summary>
