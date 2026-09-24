@@ -13,6 +13,7 @@ namespace DRT.Api.Controllers;
 /// POST /core-asks          – Create a new Core ASK.
 /// POST /core-asks/search   – Search and retrieve paginated Core ASK list (Story 1859).
 /// POST /core-asks/{askId}/cancel – Cancel an existing Core ASK (US-ASK-015).
+/// GET  /core-asks/{askId}/summary – Retrieve Core ASK summary details (Story 1854, US-ASK-003).
 /// </summary>
 [ApiController]
 [Route("core-asks")]
@@ -22,24 +23,129 @@ public sealed class CoreAsksController : ControllerBase
     private readonly ICreateCoreAskUseCase _createCoreAskUseCase;
     private readonly ICancelCoreAskUseCase _cancelCoreAskUseCase;
     private readonly ISearchCoreAsksUseCase _searchCoreAsksUseCase;
+    private readonly IGetCoreAskSummaryUseCase _getCoreAskSummaryUseCase;
     private readonly IActorResolver _actorResolver;
     private readonly IValidator<SearchCoreAsksQuery> _searchValidator;
+    private readonly IValidator<GetCoreAskSummaryQuery> _summaryValidator;
     private readonly ILogger<CoreAsksController> _logger;
 
     public CoreAsksController(
         ICreateCoreAskUseCase createCoreAskUseCase,
         ICancelCoreAskUseCase cancelCoreAskUseCase,
         ISearchCoreAsksUseCase searchCoreAsksUseCase,
+        IGetCoreAskSummaryUseCase getCoreAskSummaryUseCase,
         IActorResolver actorResolver,
         IValidator<SearchCoreAsksQuery> searchValidator,
+        IValidator<GetCoreAskSummaryQuery> summaryValidator,
         ILogger<CoreAsksController> logger)
     {
         _createCoreAskUseCase = createCoreAskUseCase;
         _cancelCoreAskUseCase = cancelCoreAskUseCase;
         _searchCoreAsksUseCase = searchCoreAsksUseCase;
+        _getCoreAskSummaryUseCase = getCoreAskSummaryUseCase;
         _actorResolver = actorResolver;
         _searchValidator = searchValidator;
+        _summaryValidator = summaryValidator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Retrieves the Core ASK summary for the given askId and optional version.
+    /// Story 1854 – GET /core-asks/{askId}/summary
+    /// </summary>
+    /// <remarks>
+    /// BR-001: When version is omitted, the latest version is returned.
+    /// BR-002: totalVersions is always populated.
+    /// BR-003: titlingCategory, pml, transitionalCoach may be null for non-applicable versions.
+    /// TODO (OI-001): Reference data display-name resolution (status, dppGroup, levelNeed,
+    /// needReason) is not yet implemented; fields are null until lookup mechanism is confirmed.
+    /// TODO: The exact permission code for record_type_viewer is not defined in the RBAC matrix;
+    /// the policy name "record_type_viewer" is used as a placeholder.
+    /// </remarks>
+    [HttpGet("{askId:int}/summary")]
+    [ProducesResponseType(typeof(CoreAskSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetCoreAskSummaryAsync(
+        [FromRoute] int askId,
+        [FromQuery] int? version,
+        CancellationToken cancellationToken)
+    {
+        // Step 1: Authenticate
+        var actor = await _actorResolver.ResolveAsync(cancellationToken);
+        if (actor == null)
+        {
+            return Unauthorized(new
+            {
+                status = 401,
+                errorCode = "authentication_required",
+                message = "Authentication is required."
+            });
+        }
+
+        // Step 1 (continued): Authorize – caller must have record_type_viewer permission
+        // TODO: Replace the placeholder permission check with the confirmed RBAC policy name
+        // for record_type_viewer (open item: permission code for record_type_viewer).
+        var hasViewerPermission = actor.Roles.Contains("record_type_viewer"); // TODO: confirm permission/role name
+        if (!hasViewerPermission)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                status = 403,
+                errorCode = "access_denied",
+                message = "You do not have permission to view Core ASK records."
+            });
+        }
+
+        // Step 2: Validate request parameters (VR-001, VR-002)
+        var query = new GetCoreAskSummaryQuery
+        {
+            AskId = askId,
+            Version = version
+        };
+
+        var validationResult = await _summaryValidator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                status = 400,
+                errorCode = "validation_failed",
+                message = "One or more validation errors occurred.",
+                errors = validationResult.Errors.Select(e => new { field = e.PropertyName, message = e.ErrorMessage })
+            });
+        }
+
+        // Steps 3–5: Execute use case (read-only, no transaction)
+        try
+        {
+            var result = await _getCoreAskSummaryUseCase.ExecuteAsync(query, cancellationToken);
+            return Ok(result.Response);
+        }
+        catch (AskNotFoundException)
+        {
+            return NotFound(new
+            {
+                status = 404,
+                errorCode = "resource_not_found",
+                message = version.HasValue
+                    ? $"Core ASK with ID {askId} and version {version} not found."
+                    : $"Core ASK with ID {askId} not found."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving Core ASK {AskId} summary", askId);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                status = 500,
+                errorCode = "unexpected_error",
+                message = "An unexpected error occurred."
+            });
+        }
     }
 
     /// <summary>
